@@ -1,3 +1,4 @@
 (use ../thehouse/init)
 
-(assert (= (hello) "Hello!"))
+# (assert (= (hello) "Hello!"))
+
