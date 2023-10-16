@@ -76,7 +76,7 @@
 .B..................B.
 .B..................B.
 .B...BB.............B.
-D@...................d
+D...................@d
 D....................d
 .B...B..............B.
 .B..................B.
@@ -87,6 +87,7 @@ D....................d
 (defn main
   [& args]
   (setdyn :log-level 0)
+  (var exit-game? false)
 
   (init-window screen-width screen-height "The House")
   (set-target-fps 60)
@@ -95,6 +96,18 @@ D....................d
   (defn newline? [x] (= x (chr "\n")))
   (def level-width (find-index newline? level1))
   (def level-height (inc (count newline? level1)))
+  (log/debug* :level-width level-width :level-height level-height)
+  (defn maybe-exit-level [bb w h off]
+    (def [[lx1 ly1] [lx2 ly2]] [off (v+ off [w h])])
+    (def [[hx1 hy1] [hx2 hy2]] bb)
+    # (log/trace* :maybe-exit-level true
+    #             :off-min off
+    #             :off-max (v+ off [w h])
+    #             :bb-min (bb 0)
+    #             :bb-max (bb 1))
+    (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
+      (log/info "Exited current level")
+      (set exit-game? true)))
   (def map-offset [(math/round (- (/ screen-width 2) (* (/ level-width 2) block-side)))
                    (math/round (- (/ screen-height 2) (* (/ level-height 2) block-side)))])
   (def level
@@ -114,7 +127,7 @@ D....................d
   (each exit-door (filter (type? :exit-door) blocks)
     (set (exit-door :collision-cb) (make-destroy blocks)))
 
-  (while (not (window-should-close))
+  (while (and (not exit-game?) (not (window-should-close)))
     (ev/sleep 0.001)
     (begin-drawing)
     (clear-background [0 0 0])
@@ -137,7 +150,12 @@ D....................d
       # Need to recalculate collided blocks because callbacks above could
       # remove them.
       (collision/correct-hero-position
-        hero (collision/filter-collided (:bb hero) blocks) movev))
+        hero (collision/filter-collided (:bb hero) blocks) movev)
+
+      (maybe-exit-level (:bb hero)
+                        (* level-width block-side)
+                        (* level-height block-side)
+                        map-offset))
 
     (each block blocks (:draw block))
     (:draw hero)
