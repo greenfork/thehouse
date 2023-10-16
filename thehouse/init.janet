@@ -12,7 +12,8 @@
 
 (def hero-side (u 5))
 (def Hero
-  @{:type :hero
+  @{:id nil
+    :type :hero
     :pos @[0 0]
     :dims @[hero-side hero-side]
     :bb (fn [self] @[(self :pos) (v+ (self :dims) (self :pos))])
@@ -32,7 +33,8 @@
 
 (def block-side (u 5))
 (def Block
-  @{:type :block
+  @{:id nil
+    :type :block
     :pos @[0 0]
     :dims @[block-side block-side]
     :color :yellow
@@ -41,6 +43,8 @@
     :draw (fn [self] (draw-rectangle ;(self :pos) ;(self :dims) (self :color)))})
 (defn <block> [& pairs] (misc/make Block ;pairs))
 (defn <door> [& pairs] (misc/make Block :color :brown ;pairs))
+(defn <exit-door> [& pairs]
+  (misc/make Block :color :brown :type :exit-door ;pairs))
 
 (defn apply-offset [x map-offset]
   (v+= (x :pos) map-offset)
@@ -49,17 +53,21 @@
   (v*= (x :pos) [size size])
   x)
 
+(var level-object-counter 0)
 (defn lin-col [patt] ~(* (line) (column) ,patt))
 (defn level-object
   ``Create an object from map assuming that the object has a `:pos` field.``
   [letter ctor]
-  ~(cmt ,(lin-col letter) ,(fn [l c] (ctor :pos @[(dec c) (dec l)]))))
-(def parse-level
+  ~(cmt ,(lin-col letter) ,(fn [l c]
+                             (ctor :pos @[(dec c) (dec l)]
+                                   :id (++ level-object-counter)))))
+(def level-grammar
   ~{:space "."
     :block ,(level-object "B" <block>)
     :hero ,(level-object "@" <hero>)
     :door ,(level-object "D" <door>)
-    :cell (+ :block :space :hero :door)
+    :exit-door ,(level-object "d" <exit-door>)
+    :cell (+ :block :space :hero :door :exit-door)
     :row (* (some :cell) (? "\n"))
     :main (some :row)})
 
@@ -68,8 +76,8 @@
 .B..................B.
 .B..................B.
 .B...BB.............B.
-D....................D
-D@...................D
+D@...................d
+D....................d
 .B...B..............B.
 .B..................B.
 .B..................B.
@@ -93,13 +101,18 @@ D@...................D
     (->>
       level1
       (log/debug "Map: \n%s")
-      (peg/match parse-level)
+      (peg/match level-grammar)
       (map |(unitize-obj $ block-side))
       (map |(apply-offset $ map-offset))))
 
-  (def hero (find |(= ($ :type) :hero) level))
-  (:move hero [0 -1])
-  (def blocks (filter |(= ($ :type) :block) level))
+  (defn type? [& types] (fn [obj] (has-value? types (obj :type))))
+  (def hero (find (type? :hero) level))
+  (def blocks (filter (type? :block :exit-door) level))
+
+  (defn make-destroy [col]
+    (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
+  (each exit-door (filter (type? :exit-door) blocks)
+    (set (exit-door :collision-cb) (make-destroy blocks)))
 
   (while (not (window-should-close))
     (ev/sleep 0.001)
@@ -117,17 +130,14 @@ D@...................D
     (when movev
       (:move hero movev)
 
-      (def collided-blocks
-        (->> blocks
-          (filter |(collision/correct-coord (:bb hero) (:bb $)))
-          # Sorting makes "sliding" movement possible because collision
-          # with several objects first accounts for the nearest one.
-          (sorted-by |(collision/bb-distance (:bb $) (:bb hero)))))
-
-      (each block collided-blocks
+      (each block (collision/filter-collided (:bb hero) blocks)
         (when (collision/correct-coord (:bb hero) (:bb block))
           (:collision-cb block)))
-      (collision/correct-hero-position hero collided-blocks movev))
+
+      # Need to recalculate collided blocks because callbacks above could
+      # remove them.
+      (collision/correct-hero-position
+        hero (collision/filter-collided (:bb hero) blocks) movev))
 
     (each block blocks (:draw block))
     (:draw hero)

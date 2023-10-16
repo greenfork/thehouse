@@ -76,3 +76,10 @@
                   :new-pos new-pos
                   :movev movev)
       (set (hero :pos) new-pos))))
+
+(defn filter-collided [target-bb blocks]
+  (->> blocks
+    (filter |(correct-coord target-bb (:bb $)))
+    # Sorting makes "sliding" movement possible because collision
+    # with several objects first accounts for the nearest one.
+    (sorted-by |(bb-distance target-bb (:bb $)))))
