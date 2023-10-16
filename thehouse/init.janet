@@ -71,12 +71,20 @@
     :row (* (some :cell) (? "\n"))
     :main (some :row)})
 
-(def level1 ``
+(def level1-ascii ``
+..........BBBBBB
+BBBBBBBBBBB....d
+D@.............d
+BBBBBBBBBBB....d
+..........BBBBBB
+``)
+
+(def level2-ascii ``
 .BBBBBBBBBBBBBBBBBBBB.
 .B..................B.
 .B..................B.
 .B...BB.............B.
-D...................@d
+D@...................d
 D....................d
 .B...B..............B.
 .B..................B.
@@ -84,51 +92,68 @@ D....................d
 .BBBBBBBBBBBBBBBBBBBB.
 ``)
 
+(defn- newline? [x] (= x (chr "\n")))
+(def Level
+  @{:ascii nil
+    :hero nil
+    :blocks nil
+    :width (fn [self] (find-index newline? (self :ascii)))
+    :height (fn [self] (inc (count newline? (self :ascii))))
+    :screen-offset (fn [self sw sh]
+                     [(math/round (- (/ sw 2) (* (/ (:width self) 2) block-side)))
+                      (math/round (- (/ sh 2) (* (/ (:height self) 2) block-side)))])})
+(defn- type? [& types] (fn [obj] (has-value? types (obj :type))))
+(defn <level> [ascii]
+  (def level (misc/make Level :ascii ascii))
+  (def objects
+    (->>
+      ascii
+      (peg/match level-grammar)
+      (map |(unitize-obj $ block-side))
+      (map |(apply-offset $ (:screen-offset level screen-width screen-height)))))
+  (put level :hero (find (type? :hero) objects))
+  (put level :blocks (filter (type? :block :exit-door) objects))
+  level)
+
+(def level1 (<level> level1-ascii))
+(def level2 (<level> level2-ascii))
+(def game
+  @{:levels [level1 level2]
+    :cur-level-idx 0
+    :must-exit? false})
+
+(defn next-level! [game]
+  (if (= (++ (game :cur-level-idx)) (length (game :levels)))
+    (set (game :must-exit?) true)))
+(defn maybe-exit-level [bb w h off]
+  (def [[lx1 ly1] [lx2 ly2]] [off (v+ off [w h])])
+  (def [[hx1 hy1] [hx2 hy2]] bb)
+  # (log/trace* :maybe-exit-level true
+  #             :off-min off
+  #             :off-max (v+ off [w h])
+  #             :bb-min (bb 0)
+  #             :bb-max (bb 1))
+  (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
+    (log/info "Exited current level")
+    (next-level! game)))
+
 (defn main
   [& args]
   (setdyn :log-level 0)
-  (var exit-game? false)
 
   (init-window screen-width screen-height "The House")
   (set-target-fps 60)
   (hide-cursor)
 
-  (defn newline? [x] (= x (chr "\n")))
-  (def level-width (find-index newline? level1))
-  (def level-height (inc (count newline? level1)))
-  (log/debug* :level-width level-width :level-height level-height)
-  (defn maybe-exit-level [bb w h off]
-    (def [[lx1 ly1] [lx2 ly2]] [off (v+ off [w h])])
-    (def [[hx1 hy1] [hx2 hy2]] bb)
-    # (log/trace* :maybe-exit-level true
-    #             :off-min off
-    #             :off-max (v+ off [w h])
-    #             :bb-min (bb 0)
-    #             :bb-max (bb 1))
-    (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
-      (log/info "Exited current level")
-      (set exit-game? true)))
-  (def map-offset [(math/round (- (/ screen-width 2) (* (/ level-width 2) block-side)))
-                   (math/round (- (/ screen-height 2) (* (/ level-height 2) block-side)))])
-  (def level
-    (->>
-      level1
-      (log/debug "Map: \n%s")
-      (peg/match level-grammar)
-      (map |(unitize-obj $ block-side))
-      (map |(apply-offset $ map-offset))))
-
-  (defn type? [& types] (fn [obj] (has-value? types (obj :type))))
-  (def hero (find (type? :hero) level))
-  (def blocks (filter (type? :block :exit-door) level))
-
   (defn make-destroy [col]
     (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
-  (each exit-door (filter (type? :exit-door) blocks)
-    (set (exit-door :collision-cb) (make-destroy blocks)))
 
-  (while (and (not exit-game?) (not (window-should-close)))
-    (ev/sleep 0.001)
+  (while (and (not (game :must-exit?)) (not (window-should-close)))
+    (def level (in (game :levels) (game :cur-level-idx)))
+    (def hero (level :hero))
+    (each exit-door (filter (type? :exit-door) (level :blocks))
+      (set (exit-door :collision-cb) (make-destroy (level :blocks))))
+
     (begin-drawing)
     (clear-background [0 0 0])
 
@@ -143,23 +168,24 @@ D....................d
     (when movev
       (:move hero movev)
 
-      (each block (collision/filter-collided (:bb hero) blocks)
+      (each block (collision/filter-collided (:bb hero) (level :blocks))
         (when (collision/correct-coord (:bb hero) (:bb block))
           (:collision-cb block)))
 
       # Need to recalculate collided blocks because callbacks above could
       # remove them.
       (collision/correct-hero-position
-        hero (collision/filter-collided (:bb hero) blocks) movev)
+        hero (collision/filter-collided (:bb hero) (level :blocks)) movev)
 
       (maybe-exit-level (:bb hero)
-                        (* level-width block-side)
-                        (* level-height block-side)
-                        map-offset))
+                        (* (:width level) block-side)
+                        (* (:height level) block-side)
+                        (:screen-offset level screen-width screen-height)))
 
-    (each block blocks (:draw block))
+    (each block (level :blocks) (:draw block))
     (:draw hero)
 
+    (ev/sleep 0.001)
     (end-drawing))
 
   (close-window))
