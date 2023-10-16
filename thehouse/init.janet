@@ -49,25 +49,29 @@
   x)
 
 (defn lin-col [patt] ~(* (line) (column) ,patt))
-(def parse-map
-  ~{:block (cmt ,(lin-col "B") ,(fn [l c] (<block> :pos @[(dec c) (dec l)])))
-    :space "."
-    :hero (cmt ,(lin-col "@") ,(fn [l c] (<hero> :pos @[(dec c) (dec l)])))
+(defn level-object
+  ``Create an object from map assuming that the object has a `:pos` field.``
+  [letter ctor]
+  ~(cmt ,(lin-col letter) ,(fn [l c] (ctor :pos @[(dec c) (dec l)]))))
+(def parse-level
+  ~{:space "."
+    :block ,(level-object "B" <block>)
+    :hero ,(level-object "@" <hero>)
     :cell (+ :block :space :hero)
     :row (* (some :cell) (? "\n"))
     :main (some :row)})
 
 (def level1 ``
-BBBBBBBBBBBBBBBBBBBB
-B..................B
-B..................B
-B...BB.............B
-B..................B
-B..................B
-B...B..............B
-B..................B
-B..@...............B
-BBBBBBBBBBBBBBBBBBBB
+.BBBBBBBBBBBBBBBBBBBB.
+.B..................B.
+.B..................B.
+.B...BB.............B.
+B....................B
+B....................B
+.B...B..............B.
+.B..................B.
+.B..@...............B.
+.BBBBBBBBBBBBBBBBBBBB.
 ``)
 
 (defn main
@@ -87,7 +91,7 @@ BBBBBBBBBBBBBBBBBBBB
     (->>
       level1
       (log/debug "Map: \n%s")
-      (peg/match parse-map)
+      (peg/match parse-level)
       (map |(unitize-obj $ block-side))
       (map |(apply-offset $ map-offset))))
 
