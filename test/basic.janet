@@ -1,4 +1,2 @@
+(use judge)
 (use ../thehouse/init)
-
-# (assert (= (hello) "Hello!"))
-
