@@ -40,6 +40,7 @@
     :collision-cb (fn [self] (flicker self :magenta))
     :draw (fn [self] (draw-rectangle ;(self :pos) ;(self :dims) (self :color)))})
 (defn <block> [& pairs] (misc/make Block ;pairs))
+(defn <door> [& pairs] (misc/make Block :color :brown ;pairs))
 
 (defn apply-offset [x map-offset]
   (v+= (x :pos) map-offset)
@@ -57,7 +58,8 @@
   ~{:space "."
     :block ,(level-object "B" <block>)
     :hero ,(level-object "@" <hero>)
-    :cell (+ :block :space :hero)
+    :door ,(level-object "D" <door>)
+    :cell (+ :block :space :hero :door)
     :row (* (some :cell) (? "\n"))
     :main (some :row)})
 
@@ -66,11 +68,11 @@
 .B..................B.
 .B..................B.
 .B...BB.............B.
-B....................B
-B....................B
+D....................D
+D@...................D
 .B...B..............B.
 .B..................B.
-.B..@...............B.
+.B..................B.
 .BBBBBBBBBBBBBBBBBBBB.
 ``)
 
