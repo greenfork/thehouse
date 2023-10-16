@@ -6,8 +6,6 @@
 
 (def unit 10)
 (defn u [x] (* unit x))
-(def width (u 10))
-(def height (u 10))
 (def screen-width (u 140))
 (def screen-height (math/round (* screen-width (/ 9 16))))
 
@@ -51,14 +49,11 @@
   (math/sqrt (+ (* x-dist x-dist) (* y-dist y-dist))))
 (test (bb-distance [[0 0] [2 2]] [[2 0] [4 2]]) 2)
 
-# If map is 10x10 blocks
-(def map-offset [(math/round (- (/ screen-width 2) (* 5 block-side)))
-                 (math/round (- (/ screen-height 2) (* 5 block-side)))])
-(defn apply-offset [x]
+(defn apply-offset [x map-offset]
   (v+= (x :pos) map-offset)
   x)
-(defn unitize-obj [x]
-  (v*= (x :pos) [block-side block-side])
+(defn unitize-obj [x size]
+  (v*= (x :pos) [size size])
   x)
 
 (defn lin-col [patt] ~(* (line) (column) ,patt))
@@ -67,20 +62,20 @@
     :space "."
     :hero (cmt ,(lin-col "@") ,(fn [l c] (<hero> :pos @[(dec c) (dec l)])))
     :cell (+ :block :space :hero)
-    :row (* (10 :cell) (? "\n"))
-    :main (10 :row)})
+    :row (* (some :cell) (? "\n"))
+    :main (some :row)})
 
 (def level1 ``
-BBBBBBBBBB
-B........B
-B........B
-B...BB...B
-B........B
-B........B
-B...B....B
-B........B
-B..@.....B
-BBBBBBBBBB
+BBBBBBBBBBBBBBBBBBBB
+B..................B
+B..................B
+B...BB.............B
+B..................B
+B..................B
+B...B..............B
+B..................B
+B..@...............B
+BBBBBBBBBBBBBBBBBBBB
 ``)
 
 (defn correct-line
@@ -137,13 +132,18 @@ BBBBBBBBBB
   (set-target-fps 60)
   (hide-cursor)
 
+  (defn newline? [x] (= x (chr "\n")))
+  (def level-width (find-index newline? level1))
+  (def level-height (inc (count newline? level1)))
+  (def map-offset [(math/round (- (/ screen-width 2) (* (/ level-width 2) block-side)))
+                   (math/round (- (/ screen-height 2) (* (/ level-height 2) block-side)))])
   (def level
     (->>
       level1
       (log/debug "Map: \n%s")
       (peg/match parse-map)
-      (map unitize-obj)
-      (map apply-offset)))
+      (map |(unitize-obj $ block-side))
+      (map |(apply-offset $ map-offset))))
 
   (def hero (find |(= ($ :type) :hero) level))
   (:move hero [0 -1])
