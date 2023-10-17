@@ -95,33 +95,67 @@
   (put level :blocks (filter (type? :block :exit-door :one :two :three) objects))
   level)
 
-###########
-# Level 1 #
-###########
+# Helpers
 
-(def level1-ascii ``
-..........BBBBBB
-BBBBBBBBBBB....d
-D@.............d
-BBBBBBBBBBB....d
-..........BBBBBB
-``)
-
-(def level1 (<level> level1-ascii))
-(defn- destroy-cb [col]
+(defn- self-destroy-cb [col]
   (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
 (defn- open-exit-doors-cb [col]
   (fn [self]
     (each ed (filter (type? :exit-door) col)
       (array/remove col (find-index |(= ($ :id) (ed :id)) col)))))
-(each exit-door (filter (type? :exit-door) (level1 :blocks))
-  (set (exit-door :collision-cb) (open-exit-doors-cb (level1 :blocks))))
+(defn- reset-collision-cb [obj] (set (obj :collision-cb) (fn [self])))
+(defn- set-change-color-cb [type color col]
+  (def obj (find (type? type) col))
+  (set (obj :collision-cb)
+       (fn [self]
+         (log/debug* type "active")
+         (change-color self color)
+         (set (self :active) true)
+         (reset-collision-cb self)
+         (when (all |($ :active) (filter (type? :one :two :three) col))
+           ((open-exit-doors-cb col) self)))))
 
 ###########
-# Level 2 #
+# Hallway #
 ###########
 
-(def level2-ascii ``
+(def hallway-ascii ``
+.......DD.........
+.BBBBBB..BBBBBBBB.
+.B..............B.
+D@..............B.
+D................d
+.B...............d
+.B..............B.
+.B..............B.
+.BBBBBBB..BBBBBBB.
+........DD......
+``)
+
+(def hallway (<level> hallway-ascii))
+(each exit-door (filter (type? :exit-door) (hallway :blocks))
+  (set (exit-door :collision-cb) (open-exit-doors-cb (hallway :blocks))))
+
+############
+# Corridor #
+############
+
+(def corridor-ascii ``
+BBBBBBBBBBBBBBBBBBBBB
+D@..................d
+D...................d
+BBBBBBBBBBBBBBBBBBBBB
+``)
+
+(def corridor (<level> corridor-ascii))
+(each exit-door (filter (type? :exit-door) (corridor :blocks))
+  (set (exit-door :collision-cb) (open-exit-doors-cb (corridor :blocks))))
+
+###################
+# Touch the Stone #
+###################
+
+(def touch-the-stone-ascii ``
 .BBBB1BBBBBBBBBBBBBBB.
 .B..................B.
 .B..................2.
@@ -134,18 +168,7 @@ D....................d
 .BBBBBBBBBBBBBB3BBBBB.
 ``)
 
-(def level2 (<level> level2-ascii))
-(defn- reset-collision-cb [obj] (set (obj :collision-cb) (fn [self])))
-(defn- set-change-color-cb [type color col]
-  (def obj (find (type? type) col))
-  (set (obj :collision-cb)
-       (fn [self]
-         (log/debug* type "active")
-         (change-color self color)
-         (set (self :active) true)
-         (reset-collision-cb self)
-         (when (all |($ :active) (filter (type? :one :two :three) col))
-           ((open-exit-doors-cb col) self)))))
-(set-change-color-cb :one :red (level2 :blocks))
-(set-change-color-cb :two :green (level2 :blocks))
-(set-change-color-cb :three :blue (level2 :blocks))
+(def touch-the-stone (<level> touch-the-stone-ascii))
+(set-change-color-cb :one :red (touch-the-stone :blocks))
+(set-change-color-cb :two :green (touch-the-stone :blocks))
+(set-change-color-cb :three :blue (touch-the-stone :blocks))

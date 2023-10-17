@@ -7,7 +7,7 @@
 (use ./globals)
 (use ./vector)
 
-(def levels [levels/level1 levels/level2])
+(def levels [levels/hallway levels/corridor levels/touch-the-stone])
 (def hero-vel (u 0.5))
 (def vel-diag-mult (math/sin (/ math/pi 4)))
 
