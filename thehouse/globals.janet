@@ -1,0 +1,5 @@
+(def unit 10)
+(defn u [x] (* unit x))
+(def screen-width (u 140))
+(def screen-height (math/round (* screen-width (/ 9 16))))
+(def block-side (u 5))
