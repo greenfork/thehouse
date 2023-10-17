@@ -117,8 +117,19 @@ D....................d
 
 (def level1 (<level> level1-ascii))
 (def level2 (<level> level2-ascii))
+(def levels [level1 level2])
+(defn destroy-cb [col]
+  (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
+(defn open-exit-doors-cb [col]
+  (fn [self]
+    (each ed (filter (type? :exit-door) col)
+      (array/remove col (find-index |(= ($ :id) (ed :id)) col)))))
+(each level levels
+  (each exit-door (filter (type? :exit-door) (level :blocks))
+    (set (exit-door :collision-cb) (open-exit-doors-cb (level :blocks)))))
+
 (def game
-  @{:levels [level1 level2]
+  @{:levels levels
     :cur-level-idx 0
     :must-exit? false})
 
@@ -145,18 +156,9 @@ D....................d
   (set-target-fps 60)
   (hide-cursor)
 
-  (defn destroy-cb [col]
-    (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
-  (defn open-exit-doors-cb [col]
-    (fn [self]
-      (each ed (filter (type? :exit-door) col)
-        (array/remove col (find-index |(= ($ :id) (ed :id)) col)))))
-
   (while (and (not (game :must-exit?)) (not (window-should-close)))
     (def level (in (game :levels) (game :cur-level-idx)))
     (def hero (level :hero))
-    (each exit-door (filter (type? :exit-door) (level :blocks))
-      (set (exit-door :collision-cb) (open-exit-doors-cb (level :blocks))))
 
     (begin-drawing)
     (clear-background [0 0 0])
