@@ -30,6 +30,8 @@
     (ev/spawn
       (ev/sleep 0.2)
       (set (obj :color) cur-color))))
+(defn change-color [obj color]
+  (set (obj :color) color))
 
 (def block-side (u 5))
 (def Block
@@ -45,6 +47,11 @@
 (defn <door> [& pairs] (misc/make Block :color :brown ;pairs))
 (defn <exit-door> [& pairs]
   (misc/make Block :color :brown :type :exit-door ;pairs))
+
+(def SpecialBlock (misc/make Block :active false))
+(defn <one> [& pairs] (misc/make SpecialBlock :type :one ;pairs))
+(defn <two> [& pairs] (misc/make SpecialBlock :type :two ;pairs))
+(defn <three> [& pairs] (misc/make SpecialBlock :type :three ;pairs))
 
 (defn apply-offset [x map-offset]
   (v+= (x :pos) map-offset)
@@ -67,7 +74,10 @@
     :hero ,(level-object "@" <hero>)
     :door ,(level-object "D" <door>)
     :exit-door ,(level-object "d" <exit-door>)
-    :cell (+ :block :space :hero :door :exit-door)
+    :one ,(level-object "1" <one>)
+    :two ,(level-object "2" <two>)
+    :three ,(level-object "3" <three>)
+    :cell (+ :block :space :hero :door :exit-door :one :two :three)
     :row (* (some :cell) (? "\n"))
     :main (some :row)})
 
@@ -80,16 +90,16 @@ BBBBBBBBBBB....d
 ``)
 
 (def level2-ascii ``
-.BBBBBBBBBBBBBBBBBBBB.
+.BBBB1BBBBBBBBBBBBBBB.
 .B..................B.
+.B..................2.
 .B..................B.
-.B...BB.............B.
 D@...................d
 D....................d
-.B...B..............B.
 .B..................B.
 .B..................B.
-.BBBBBBBBBBBBBBBBBBBB.
+.B..................B.
+.BBBBBBBBBBBBBB3BBBBB.
 ``)
 
 (defn- newline? [x] (= x (chr "\n")))
@@ -112,21 +122,33 @@ D....................d
       (map |(unitize-obj $ block-side))
       (map |(apply-offset $ (:screen-offset level screen-width screen-height)))))
   (put level :hero (find (type? :hero) objects))
-  (put level :blocks (filter (type? :block :exit-door) objects))
+  (put level :blocks (filter (type? :block :exit-door :one :two :three) objects))
   level)
 
 (def level1 (<level> level1-ascii))
-(def level2 (<level> level2-ascii))
-(def levels [level1 level2])
 (defn destroy-cb [col]
   (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
 (defn open-exit-doors-cb [col]
   (fn [self]
     (each ed (filter (type? :exit-door) col)
       (array/remove col (find-index |(= ($ :id) (ed :id)) col)))))
-(each level levels
-  (each exit-door (filter (type? :exit-door) (level :blocks))
-    (set (exit-door :collision-cb) (open-exit-doors-cb (level :blocks)))))
+(each exit-door (filter (type? :exit-door) (level1 :blocks))
+  (set (exit-door :collision-cb) (open-exit-doors-cb (level1 :blocks))))
+
+(def level2 (<level> level2-ascii))
+(defn set-change-color-cb [type color col]
+  (def obj (find (type? type) col))
+  (set (obj :collision-cb)
+       (fn [self]
+         (change-color self color)
+         (set (self :active) true)
+         (when (all |($ :active) (filter (type? :one :two :three) col))
+           ((open-exit-doors-cb col) self)))))
+(set-change-color-cb :one :red (level2 :blocks))
+(set-change-color-cb :two :green (level2 :blocks))
+(set-change-color-cb :three :blue (level2 :blocks))
+
+(def levels [level1 level2])
 
 (def game
   @{:levels levels
