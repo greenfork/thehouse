@@ -145,14 +145,18 @@ D....................d
   (set-target-fps 60)
   (hide-cursor)
 
-  (defn make-destroy [col]
+  (defn destroy-cb [col]
     (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
+  (defn open-exit-doors-cb [col]
+    (fn [self]
+      (each ed (filter (type? :exit-door) col)
+        (array/remove col (find-index |(= ($ :id) (ed :id)) col)))))
 
   (while (and (not (game :must-exit?)) (not (window-should-close)))
     (def level (in (game :levels) (game :cur-level-idx)))
     (def hero (level :hero))
     (each exit-door (filter (type? :exit-door) (level :blocks))
-      (set (exit-door :collision-cb) (make-destroy (level :blocks))))
+      (set (exit-door :collision-cb) (open-exit-doors-cb (level :blocks))))
 
     (begin-drawing)
     (clear-background [0 0 0])
