@@ -135,13 +135,16 @@ D....................d
 (each exit-door (filter (type? :exit-door) (level1 :blocks))
   (set (exit-door :collision-cb) (open-exit-doors-cb (level1 :blocks))))
 
+(defn- reset-collision-cb [obj] (set (obj :collision-cb) (fn [self])))
 (def level2 (<level> level2-ascii))
 (defn set-change-color-cb [type color col]
   (def obj (find (type? type) col))
   (set (obj :collision-cb)
        (fn [self]
+         (log/debug* type "active")
          (change-color self color)
          (set (self :active) true)
+         (reset-collision-cb self)
          (when (all |($ :active) (filter (type? :one :two :three) col))
            ((open-exit-doors-cb col) self)))))
 (set-change-color-cb :one :red (level2 :blocks))

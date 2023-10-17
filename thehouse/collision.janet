@@ -71,10 +71,10 @@
                   [xcorr 0]
                   [0 ycorr])))
       (def new-pos (v+ (hero :pos) compensation))
-      (log/trace* :correction [xcorr ycorr]
-                  :compensation compensation
-                  :new-pos new-pos
-                  :movev movev)
+      # (log/trace* :correction [xcorr ycorr]
+      #             :compensation compensation
+      #             :new-pos new-pos
+      #             :movev movev)
       (set (hero :pos) new-pos))))
 
 (defn filter-collided [target-bb blocks]
