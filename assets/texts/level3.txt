@@ -1,0 +1,19 @@
+.START
+
+The door shuts with a loud noise! It was half-open before and now it looks
+like it is locked.
+
+The wind chills my feet, it is getting really stronger here.
+
+I should quickly find someone before I caught a cold.
+
+.THE-DOOR
+
+The door looks locked. But there's a scribbled text on it that says
+"Touch the stone". Touch what?
+
+.UNLOCKED
+
+A crackling noise of poorly oiled lock screeched somewhat unexpectedly.
+
+I guess the door is open now.

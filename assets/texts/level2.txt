@@ -1,0 +1,17 @@
+.START
+
+This looks like the only open door. I guess I should go further.
+
+I will take the lamp because I can barely distinguish the other end
+of this corridor.
+
+.CORRIDOR
+
+This corridor descends downhill pretty steeply,
+do they have something underground like a cellar?
+
+.TUNNEL
+
+This looks more like a tunnel. The walls are made of sand and gravel.
+
+It feels cold. Persistent breeze blows down the tunnel.

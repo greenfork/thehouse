@@ -1,0 +1,21 @@
+.START
+
+Another room. Is there going to be another riddle?
+
+.THE-DOOR
+
+It is the same story again. The scribbling says "Dance on the floor".
+
+Hmm, dancing.
+
+.PRESSED
+
+A low humming noise comes from... the downside?
+
+.LOST
+
+The noise is gone! I wonder if there's some pattern to follow.
+
+.UNLOCKED
+
+A screeching sound probably means the the door is unlocked now.
