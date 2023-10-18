@@ -31,6 +31,43 @@
     (log/info "Exited current level")
     (next-level! game)))
 
+(defn execute-level-logic [level]
+  (def hero (level :hero))
+
+  (begin-drawing)
+  (clear-background [0 0 0])
+
+  (def movev
+    (as?-> [0 0] _
+      (if (key-down? :right) (v+ [hero-vel 0] _) _)
+      (if (key-down? :left) (v+ [(- hero-vel) 0] _) _)
+      (if (key-down? :up) (v+ [0 (- hero-vel)] _) _)
+      (if (key-down? :down) (v+ [0 hero-vel] _) _)
+      (if (= 2 (count zero? _)) nil _)
+      (if (= 0 (count zero? _)) (map |(* vel-diag-mult $) _) _)))
+  (when movev
+    (:move hero movev)
+
+    (each block (collision/filter-collided (:bb hero) (level :blocks))
+      (when (collision/correct-coord (:bb hero) (:bb block))
+        (:collision-cb block)))
+
+    # Need to recalculate collided blocks because callbacks above could
+    # remove them.
+    (collision/correct-hero-position
+      hero (collision/filter-collided (:bb hero) (level :blocks)) movev)
+
+    (maybe-exit-level (:bb hero)
+                      (* (:width level) block-side)
+                      (* (:height level) block-side)
+                      (:screen-offset level screen-width screen-height)))
+
+  (each block (level :blocks) (:draw block))
+  (:draw hero)
+
+  (ev/sleep 0.001)
+  (end-drawing))
+
 (defn main
   [& args]
   (setdyn :log-level 0)
@@ -40,41 +77,6 @@
   (hide-cursor)
 
   (while (and (not (game :must-exit?)) (not (window-should-close)))
-    (def level (in (game :levels) (game :cur-level-idx)))
-    (def hero (level :hero))
-
-    (begin-drawing)
-    (clear-background [0 0 0])
-
-    (def movev
-      (as?-> [0 0] _
-        (if (key-down? :right) (v+ [hero-vel 0] _) _)
-        (if (key-down? :left) (v+ [(- hero-vel) 0] _) _)
-        (if (key-down? :up) (v+ [0 (- hero-vel)] _) _)
-        (if (key-down? :down) (v+ [0 hero-vel] _) _)
-        (if (= 2 (count zero? _)) nil _)
-        (if (= 0 (count zero? _)) (map |(* vel-diag-mult $) _) _)))
-    (when movev
-      (:move hero movev)
-
-      (each block (collision/filter-collided (:bb hero) (level :blocks))
-        (when (collision/correct-coord (:bb hero) (:bb block))
-          (:collision-cb block)))
-
-      # Need to recalculate collided blocks because callbacks above could
-      # remove them.
-      (collision/correct-hero-position
-        hero (collision/filter-collided (:bb hero) (level :blocks)) movev)
-
-      (maybe-exit-level (:bb hero)
-                        (* (:width level) block-side)
-                        (* (:height level) block-side)
-                        (:screen-offset level screen-width screen-height)))
-
-    (each block (level :blocks) (:draw block))
-    (:draw hero)
-
-    (ev/sleep 0.001)
-    (end-drawing))
+    (execute-level-logic (in (game :levels) (game :cur-level-idx))))
 
   (close-window))
