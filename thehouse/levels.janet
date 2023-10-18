@@ -74,7 +74,8 @@
 
 (defn- newline? [x] (= x (chr "\n")))
 (def Level
-  @{:ascii nil
+  @{:name nil
+    :ascii nil
     :hero nil
     :blocks nil
     :width (fn [self] (find-index newline? (self :ascii)))
@@ -83,8 +84,8 @@
                      [(math/round (- (/ sw 2) (* (/ (:width self) 2) block-side)))
                       (math/round (- (/ sh 2) (* (/ (:height self) 2) block-side)))])})
 (defn- type? [& types] (fn [obj] (has-value? types (obj :type))))
-(defn <level> [ascii]
-  (def level (misc/make Level :ascii ascii))
+(defn <level> [name ascii]
+  (def level (misc/make Level :name name :ascii ascii))
   (def objects
     (->>
       ascii
@@ -132,7 +133,7 @@ D................d
 ........DD......
 ``)
 
-(def hallway (<level> hallway-ascii))
+(def hallway (<level> "Hallway" hallway-ascii))
 (each exit-door (filter (type? :exit-door) (hallway :blocks))
   (set (exit-door :collision-cb) (open-exit-doors-cb (hallway :blocks))))
 
@@ -147,7 +148,7 @@ D...................d
 BBBBBBBBBBBBBBBBBBBBB
 ``)
 
-(def corridor (<level> corridor-ascii))
+(def corridor (<level> "Corridor" corridor-ascii))
 (each exit-door (filter (type? :exit-door) (corridor :blocks))
   (set (exit-door :collision-cb) (open-exit-doors-cb (corridor :blocks))))
 
@@ -168,7 +169,7 @@ D....................d
 .BBBBBBBBBBBBBB3BBBBB.
 ``)
 
-(def touch-the-stone (<level> touch-the-stone-ascii))
+(def touch-the-stone (<level> "Touch the Stone" touch-the-stone-ascii))
 (set-change-color-cb :one :red (touch-the-stone :blocks))
 (set-change-color-cb :two :green (touch-the-stone :blocks))
 (set-change-color-cb :three :blue (touch-the-stone :blocks))

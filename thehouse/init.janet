@@ -17,9 +17,14 @@
     :must-exit? false
     :state :init})
 
+(defn current-level [game] (in (game :levels) (game :cur-level-idx)))
 (defn next-level! [game]
+  (def cur-level-name ((current-level game) :name))
   (if (= (++ (game :cur-level-idx)) (length (game :levels)))
-    (set (game :must-exit?) true)))
+    (do
+      (log/info* :next-level! true :exit true)
+      (set (game :must-exit?) true))
+    (log/info* :next-level true :from cur-level-name :to ((current-level game) :name))))
 (defn maybe-exit-level [bb w h off]
   (def [[lx1 ly1] [lx2 ly2]] [off (v+ off [w h])])
   (def [[hx1 hy1] [hx2 hy2]] bb)
@@ -29,7 +34,6 @@
   #             :bb-min (bb 0)
   #             :bb-max (bb 1))
   (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
-    (log/info "Exited current level")
     (next-level! game)))
 (defn change-state [game new-state]
   (log/info* :change-state true :from (game :state) :to new-state)
@@ -83,6 +87,6 @@
   (while (and (not (game :must-exit?)) (not (window-should-close)))
     (case (game :state)
       :init (change-state game :levels)
-      :levels (execute-level-logic (in (game :levels) (game :cur-level-idx)))))
+      :levels (execute-level-logic (current-level game))))
 
   (close-window))
