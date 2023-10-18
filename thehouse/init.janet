@@ -39,6 +39,13 @@
   (log/info* :change-state true :from (game :state) :to new-state)
   (set (game :state) new-state))
 
+(defn run-text [texts]
+  (when (key-pressed? :space)
+    (change-state game :levels))
+  (begin-drawing)
+  (draw-text (first (texts "START")) (text-screen-offset 0) (text-screen-offset 1) 28 :ray-white)
+  (end-drawing))
+
 (defn execute-level-logic [level]
   (def hero (level :hero))
 
@@ -76,6 +83,28 @@
   (ev/sleep 0.001)
   (end-drawing))
 
+(def text-grammar
+  ~{:title (* "." (<- (some (range "AZ"))) "\n\n")
+    :single-text (* (not :title) (<- (some (if-not "\n\n" 1))) (? "\n\n"))
+    :many-texts (group (some :single-text))
+    :entry (* :s* :title :many-texts)
+    :main (cmt (some :entry) ,(fn [& entries]
+                                (->>
+                                  entries
+                                  (partition 2)
+                                  (from-pairs))))})
+(defn <text> [file-name]
+  (->>
+    (string "./assets/texts/" file-name ".txt")
+    (slurp)
+    (peg/match text-grammar)
+    (first)))
+(def start-text (<text> "start"))
+(def hallway-text (<text> "hallway"))
+(def corridor-text (<text> "corridor"))
+(def touch-the-stone-text (<text> "touch_the_stone"))
+(def dance-on-the-floor-text (<text> "dance_on_the_floor"))
+
 (defn main
   [& args]
   (setdyn :log-level 0)
@@ -86,7 +115,7 @@
 
   (while (and (not (game :must-exit?)) (not (window-should-close)))
     (case (game :state)
-      :init (change-state game :levels)
+      :init (run-text start-text)
       :levels (execute-level-logic (current-level game))))
 
   (close-window))
