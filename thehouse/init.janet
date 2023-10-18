@@ -14,7 +14,8 @@
 (def game
   @{:levels levels
     :cur-level-idx 0
-    :must-exit? false})
+    :must-exit? false
+    :state :init})
 
 (defn next-level! [game]
   (if (= (++ (game :cur-level-idx)) (length (game :levels)))
@@ -30,6 +31,9 @@
   (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
     (log/info "Exited current level")
     (next-level! game)))
+(defn change-state [game new-state]
+  (log/info* :change-state true :from (game :state) :to new-state)
+  (set (game :state) new-state))
 
 (defn execute-level-logic [level]
   (def hero (level :hero))
@@ -77,6 +81,8 @@
   (hide-cursor)
 
   (while (and (not (game :must-exit?)) (not (window-should-close)))
-    (execute-level-logic (in (game :levels) (game :cur-level-idx))))
+    (case (game :state)
+      :init (change-state game :levels)
+      :levels (execute-level-logic (in (game :levels) (game :cur-level-idx)))))
 
   (close-window))
