@@ -17,9 +17,11 @@
     :cur-level-idx 0
     :frame 0
     :must-exit? false
-    :state :init})
+    :phase :init
+    :state @{:init 0}})
 
 (defn current-level [game] (in (game :levels) (game :cur-level-idx)))
+(defn current-state [game] (in (game :state) (game :phase)))
 (defn next-level! [game]
   (def cur-level-name ((current-level game) :name))
   (if (= (++ (game :cur-level-idx)) (length (game :levels)))
@@ -37,9 +39,9 @@
   #             :bb-max (bb 1))
   (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
     (next-level! game)))
-(defn change-state [game new-state]
-  (log/info* :change-state true :from (game :state) :to new-state)
-  (set (game :state) new-state))
+(defn change-phase [game new-phase]
+  (log/info* :change-phase true :from (game :phase) :to new-phase)
+  (set (game :phase) new-phase))
 (defn increase-frame-counter [game]
   (if (< (game :frame) math/int-max)
     (+= (game :frame) 1)
@@ -61,24 +63,25 @@
 (defn draw-press-space []
   (def text "Press Space")
   (def pos [(math/round (- (/ screen-width 2) (/ (text/measure text) 2)))
-            (- screen-height 10 text/vertical-offset)])
-  (call/not 100 40 (fn [] (text/draw text pos))))
+            (- screen-height 50)])
+  (call/not 120 60 (fn [] (text/draw text pos :size :small :color :light-gray))))
 
 (defn run-text [texts]
-  (when (key-pressed? :space)
-    (change-state game :levels))
   (begin-drawing)
   (clear-background [0 0 0])
-  (def next-pos
-    (text/draw (text/layout (0 (texts "START")) text-width) text-screen-offset))
-  (def next-pos
-    (text/draw (text/layout (1 (texts "START")) text-width) next-pos))
-  (def next-pos
-    (text/draw (text/layout (2 (texts "START")) text-width) next-pos))
+  (var next-pos text-screen-offset)
+  (for idx 0 (inc (current-state game))
+    (set next-pos
+         (text/draw (text/layout (idx (texts "START")) text-width) next-pos)))
   (draw-press-space)
   # (draw-rectangle-wires (text-screen-offset 0) (text-screen-offset 1)
   #                       text-width 600 :yellow)
-  (end-drawing))
+  (end-drawing)
+
+  (when (key-pressed? :space)
+    (if (< (inc (current-state game)) 3)
+      (update-in game [:state :init] inc)
+      (change-phase game :levels))))
 
 (defn execute-level-logic [level]
   (def hero (level :hero))
@@ -131,7 +134,7 @@
   (while (and (not (game :must-exit?)) (not (window-should-close)))
     (increase-frame-counter game)
     (draw-fps 0 0)
-    (case (game :state)
+    (case (game :phase)
       :init (run-text text/start-text)
       :levels (execute-level-logic (current-level game))))
 

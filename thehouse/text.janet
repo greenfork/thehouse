@@ -2,26 +2,34 @@
 (use ./globals)
 (use ./vector)
 
-(var FONT nil)
-
-(def size 56)
-(def spacing 0.5)
+(def fonts @{:small nil :normal nil})
+(def sizes {:small 40 :normal 56})
+(def font-spacing 1)
 (def line-height 1)
-(def vertical-offset (* size line-height))
+(def vertical-offset (* (sizes :normal) line-height))
+
 (def font-ttf (slurp "./assets/fonts/Europeana_One.ttf"))
 
 (defn init []
-  (set FONT (load-font-from-memory ".ttf" font-ttf (length font-ttf)
-                                   size (range 32 127))))
+  (set (fonts :normal) (load-font-from-memory
+                         ".ttf" font-ttf (length font-ttf)
+                         (sizes :normal) (range 32 127)))
+  (set (fonts :small) (load-font-from-memory
+                        ".ttf" font-ttf (length font-ttf)
+                        (sizes :small) (range 32 127))))
 (defn deinit []
-  (unload-font FONT))
+  (unload-font (fonts :normal))
+  (unload-font (fonts :small)))
 
 (defn draw
   ``Draw some `text` at `pos` position, moving to the next line on each `"\n"`
   newline character. Returns the position of the next line after the drawn text``
-  [text pos &opt color]
-  (assert (not (nil? FONT)) "FONT is not set")
+  [text pos &named size color]
+  (default size :normal)
   (default color :ray-white)
+  (def font-size (sizes size))
+  (def font (fonts size))
+  (assert (not (nil? font)) "FONT is not set")
   (def text_and_pos
     (as-> text _
       (string/split "\n" _)
@@ -30,7 +38,7 @@
            _
            (range (length _)))))
   (each [text pos] text_and_pos
-    (draw-text-ex FONT text pos size spacing color))
+    (draw-text-ex font text pos font-size font-spacing color))
   (->>
     text_and_pos
     (last)
@@ -38,8 +46,8 @@
     (v+ [0 vertical-offset])))
 
 (defn measure [text]
-  (assert (not (nil? FONT)) "FONT is not set")
-  (0 (measure-text-ex FONT text size spacing)))
+  (assert (not (nil? (fonts :normal))) "FONT is not set")
+  (0 (measure-text-ex (fonts :normal) text (sizes :normal) font-spacing)))
 
 (defn layout
   ``Insert newline characters `"\n"` in the `text` where the text would exceed
