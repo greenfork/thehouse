@@ -15,6 +15,7 @@
 (def game
   @{:levels levels
     :cur-level-idx 0
+    :frame 0
     :must-exit? false
     :state :init})
 
@@ -39,11 +40,29 @@
 (defn change-state [game new-state]
   (log/info* :change-state true :from (game :state) :to new-state)
   (set (game :state) new-state))
+(defn increase-frame-counter [game]
+  (if (< (game :frame) math/int-max)
+    (+= (game :frame) 1)
+    (set (game :frame) 0)))
 
 (def text-screen-offset
   [(math/round (* screen-width (/ 1 6)))
    (math/round (* screen-height (/ 1 5)))])
 (def text-width (math/round (* screen-width (/ 4 6))))
+
+(defn call/not [call-frames not-frames f]
+  (def total (+ call-frames not-frames))
+  # (log/trace* :total total :mod (% (game :frame) total)
+  #             :call-frames call-frames
+  #             :condition (< (% (game :frame) total) call-frames))
+  (when (< (% (game :frame) total) call-frames)
+    (f)))
+
+(defn draw-press-space []
+  (def text "Press Space")
+  (def pos [(math/round (- (/ screen-width 2) (/ (text/measure text) 2)))
+            (- screen-height 10 text/vertical-offset)])
+  (call/not 100 40 (fn [] (text/draw text pos))))
 
 (defn run-text [texts]
   (when (key-pressed? :space)
@@ -56,6 +75,7 @@
     (text/draw (text/layout (1 (texts "START")) text-width) next-pos))
   (def next-pos
     (text/draw (text/layout (2 (texts "START")) text-width) next-pos))
+  (draw-press-space)
   # (draw-rectangle-wires (text-screen-offset 0) (text-screen-offset 1)
   #                       text-width 600 :yellow)
   (end-drawing))
@@ -109,6 +129,8 @@
   (text/init)
 
   (while (and (not (game :must-exit?)) (not (window-should-close)))
+    (increase-frame-counter game)
+    (draw-fps 0 0)
     (case (game :state)
       :init (run-text text/start-text)
       :levels (execute-level-logic (current-level game))))

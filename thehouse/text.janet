@@ -20,7 +20,7 @@
   ``Draw some `text` at `pos` position, moving to the next line on each `"\n"`
   newline character. Returns the position of the next line after the drawn text``
   [text pos &opt color]
-  (assert (not (nil? FONT)) "Font is not set")
+  (assert (not (nil? FONT)) "FONT is not set")
   (default color :ray-white)
   (def text_and_pos
     (as-> text _
@@ -37,8 +37,8 @@
     (1)
     (v+ [0 vertical-offset])))
 
-(defn- measure [text]
-  (assert (not (nil? FONT)) "Font is not set")
+(defn measure [text]
+  (assert (not (nil? FONT)) "FONT is not set")
   (0 (measure-text-ex FONT text size spacing)))
 
 (defn layout
