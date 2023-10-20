@@ -2,6 +2,7 @@
 (import ./collision)
 (import ./levels)
 (import ./log)
+(import ./text)
 (use jaylib)
 (use judge)
 (use ./globals)
@@ -39,11 +40,24 @@
   (log/info* :change-state true :from (game :state) :to new-state)
   (set (game :state) new-state))
 
+(def text-screen-offset
+  [(math/round (* screen-width (/ 1 6)))
+   (math/round (* screen-height (/ 1 5)))])
+(def text-width (math/round (* screen-width (/ 4 6))))
+
 (defn run-text [texts]
   (when (key-pressed? :space)
     (change-state game :levels))
   (begin-drawing)
-  (draw-text (first (texts "START")) (text-screen-offset 0) (text-screen-offset 1) 28 :ray-white)
+  (clear-background [0 0 0])
+  (def next-pos
+    (text/draw (text/layout (0 (texts "START")) text-width) text-screen-offset))
+  (def next-pos
+    (text/draw (text/layout (1 (texts "START")) text-width) next-pos))
+  (def next-pos
+    (text/draw (text/layout (2 (texts "START")) text-width) next-pos))
+  # (draw-rectangle-wires (text-screen-offset 0) (text-screen-offset 1)
+  #                       text-width 600 :yellow)
   (end-drawing))
 
 (defn execute-level-logic [level]
@@ -83,39 +97,21 @@
   (ev/sleep 0.001)
   (end-drawing))
 
-(def text-grammar
-  ~{:title (* "." (<- (some (range "AZ"))) "\n\n")
-    :single-text (* (not :title) (<- (some (if-not "\n\n" 1))) (? "\n\n"))
-    :many-texts (group (some :single-text))
-    :entry (* :s* :title :many-texts)
-    :main (cmt (some :entry) ,(fn [& entries]
-                                (->>
-                                  entries
-                                  (partition 2)
-                                  (from-pairs))))})
-(defn <text> [file-name]
-  (->>
-    (string "./assets/texts/" file-name ".txt")
-    (slurp)
-    (peg/match text-grammar)
-    (first)))
-(def start-text (<text> "start"))
-(def hallway-text (<text> "hallway"))
-(def corridor-text (<text> "corridor"))
-(def touch-the-stone-text (<text> "touch_the_stone"))
-(def dance-on-the-floor-text (<text> "dance_on_the_floor"))
-
 (defn main
   [& args]
   (setdyn :log-level 0)
 
+  (set-config-flags :window-highdpi)
   (init-window screen-width screen-height "The House")
   (set-target-fps 60)
   (hide-cursor)
 
+  (text/init)
+
   (while (and (not (game :must-exit?)) (not (window-should-close)))
     (case (game :state)
-      :init (run-text start-text)
+      :init (run-text text/start-text)
       :levels (execute-level-logic (current-level game))))
 
+  (text/deinit)
   (close-window))
