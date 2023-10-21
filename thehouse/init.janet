@@ -17,7 +17,7 @@
     :cur-level-idx 0
     :frame 0
     :must-exit? false
-    :phase :init
+    :phase :levels
     :state @{:init 0}})
 
 (defn exit-game [game]
@@ -52,11 +52,6 @@
     (+= (game :frame) 1)
     (set (game :frame) 0)))
 
-(def text-screen-offset
-  [(math/round (* screen-width (/ 1 6)))
-   (math/round (* screen-height (/ 1 5)))])
-(def text-width (math/round (* screen-width (/ 4 6))))
-
 (defn call/not [call-frames not-frames f]
   (def total (+ call-frames not-frames))
   # (log/trace* :total total :mod (% (game :frame) total)
@@ -74,12 +69,12 @@
 (defn run-text [texts]
   (begin-drawing)
   (clear-background [0 0 0])
-  (var next-pos text-screen-offset)
+  (var next-pos text-full-screen-offset)
   (for idx 0 (inc (curstate game))
     (set next-pos
          (text/draw (text/layout (idx (texts "START")) text-width) next-pos)))
   (draw-press-space)
-  # (draw-rectangle-wires (text-screen-offset 0) (text-screen-offset 1)
+  # (draw-rectangle-wires (text-full-screen-offset 0) (text-full-screen-offset 1)
   #                       text-width 600 :yellow)
   (end-drawing)
 
@@ -88,9 +83,20 @@
       (update-in game [:state :init] inc)
       (change-phase game :levels))))
 
-(defn execute-level-logic [level]
+(defn execute-level-init [level]
   (def hero (level :hero))
+  (begin-drawing)
+  (clear-background [0 0 0])
+  (each block (level :blocks) (:draw block))
+  (:draw hero)
+  (:run (levels/curstate level))
+  (draw-press-space)
+  (end-drawing)
+  (when (key-pressed? :space)
+    (set (level :phase) (:advance (curstate level)))))
 
+(defn execute-level-default [level]
+  (def hero (level :hero))
   (def movev
     (as?-> [0 0] _
       (if (key-down? :right) (v+ [hero-vel 0] _) _)
@@ -126,6 +132,7 @@
   [& args]
   (setdyn :log-level 0)
 
+  # Start a repl to connect to.
   (with [netrepl-stream
          (netrepl/server-single
            "127.0.0.1" "9365" (curenv)
@@ -134,20 +141,24 @@
            "Welcome to The House\n")
          # Shuts down clients when game loop is exited.
          (fn [stream] (:close stream) (quit))]
-    (set-config-flags :window-highdpi :window-resizable)
-    (init-window screen-width screen-height "The House")
-    (set-target-fps 60)
-    (hide-cursor)
-
-    (text/init)
-
-    (while (and (not (game :must-exit?)) (not (window-should-close)))
-      (increase-frame-counter game)
-      (draw-fps 0 0)
-      (case (game :phase)
-        :init (run-text text/start-text)
-        :levels (execute-level-logic (curlevel game)))
-      (ev/sleep 0.001))
-
-    (text/deinit)
-    (close-window)))
+    (set-config-flags :window-highdpi)
+    # Open and close window, necessary to have a destructor so that on error
+    # the window closes. Otherwise it stays open because of the running REPL.
+    (with [_
+           (init-window screen-width screen-height "The House")
+           (fn [_] (close-window))]
+      (set-target-fps 60)
+      (hide-cursor)
+      (text/init)
+      (while (and (not (game :must-exit?)) (not (window-should-close)))
+        (increase-frame-counter game)
+        (draw-fps 0 0)
+        (case (game :phase)
+          :init (run-text text/start-text)
+          :levels (let [level (curlevel game)]
+                    (case (level :phase)
+                      :default (execute-level-default level)
+                      :init (execute-level-init level))))
+        # Yield control to other fibers for things such as REPL and animation.
+        (ev/sleep 0.001))
+      (text/deinit))))

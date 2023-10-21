@@ -1,8 +1,13 @@
 (import spork/misc)
 (import ./log)
+(import ./text)
 (use jaylib)
 (use ./globals)
 (use ./vector)
+
+(def text-in-level-screen-offset
+  [(math/round (* screen-width (/ 1 6)))
+   (math/round (* screen-height (/ 3 4)))])
 
 (defn flicker [obj color]
   (def cur-color (obj :color))
@@ -74,7 +79,10 @@
 
 (defn- newline? [x] (= x (chr "\n")))
 (def Level
-  @{:name nil
+  @{:id nil
+    :name nil
+    :phase :init
+    :state nil
     :ascii nil
     :hero nil
     :blocks nil
@@ -82,9 +90,9 @@
     :height (fn [self] (inc (count newline? (self :ascii))))
     :screen-offset (fn [self sw sh]
                      [(math/round (- (/ sw 2) (* (/ (:width self) 2) block-side)))
-                      (math/round (- (/ sh 2) (* (/ (:height self) 2) block-side)))])})
+                      (math/round (- (/ sh 2) (* (/ (:height self) 2) block-side) (/ sh 8)))])})
 (defn- type? [& types] (fn [obj] (has-value? types (obj :type))))
-(defn <level> [name ascii]
+(defn <level> [id name ascii]
   (def level (misc/make Level :name name :ascii ascii))
   (def objects
     (->>
@@ -95,8 +103,10 @@
   (put level :hero (find (type? :hero) objects))
   (put level :blocks (filter (type? :block :exit-door :one :two :three) objects))
   level)
+(defn curstate [level]
+  (in (level :state) (level :phase)))
 
-# Helpers
+# Callback helpers
 
 (defn- self-destroy-cb [col]
   (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
@@ -116,6 +126,21 @@
          (when (all |($ :active) (filter (type? :one :two :three) col))
            ((open-exit-doors-cb col) self)))))
 
+# Logic helpers
+
+(defn- text-logic [text]
+  @{:run (fn [self]
+           (text/draw (text/layout (in (self :text) (self :idx)) text-width)
+                      text-in-level-screen-offset))
+    :advance (fn [self]
+               (if (< (inc (self :idx)) (length (self :text)))
+                 (do
+                   (+= (self :idx) 1)
+                   :init)
+                 :default))
+    :text text
+    :idx 0})
+
 ###########
 # Hallway #
 ###########
@@ -133,9 +158,10 @@ D................d
 ........DD......
 ``)
 
-(def hallway (<level> "Hallway" hallway-ascii))
+(def hallway (<level> :hallway "Hallway" hallway-ascii))
 (each exit-door (filter (type? :exit-door) (hallway :blocks))
   (set (exit-door :collision-cb) (open-exit-doors-cb (hallway :blocks))))
+(put-in hallway [:state :init] (text-logic (text/hallway-text "START")))
 
 ############
 # Corridor #
@@ -148,9 +174,10 @@ D...................d
 BBBBBBBBBBBBBBBBBBBBB
 ``)
 
-(def corridor (<level> "Corridor" corridor-ascii))
+(def corridor (<level> :corridor "Corridor" corridor-ascii))
 (each exit-door (filter (type? :exit-door) (corridor :blocks))
   (set (exit-door :collision-cb) (open-exit-doors-cb (corridor :blocks))))
+(put-in corridor [:state :init] (text-logic (text/corridor-text "START")))
 
 ###################
 # Touch the Stone #
@@ -169,7 +196,8 @@ D....................d
 .BBBBBBBBBBBBBB3BBBBB.
 ``)
 
-(def touch-the-stone (<level> "Touch the Stone" touch-the-stone-ascii))
+(def touch-the-stone (<level> :touch-the-stone "Touch the Stone" touch-the-stone-ascii))
 (set-change-color-cb :one :red (touch-the-stone :blocks))
 (set-change-color-cb :two :green (touch-the-stone :blocks))
 (set-change-color-cb :three :blue (touch-the-stone :blocks))
+(put-in touch-the-stone [:state :init] (text-logic (text/touch-the-stone-text "START")))
