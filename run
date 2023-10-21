@@ -1,0 +1,3 @@
+#!/bin/sh
+
+jpm -l janet thehouse/init.janet

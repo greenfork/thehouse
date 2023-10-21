@@ -9,12 +9,11 @@
 (use ./globals)
 (use ./vector)
 
-(def levels [levels/hallway levels/corridor levels/touch-the-stone])
 (def hero-vel (u 0.5))
 (def vel-diag-mult (math/sin (/ math/pi 4)))
 
 (def game
-  @{:levels levels
+  @{:levels [levels/hallway levels/corridor levels/touch-the-stone]
     :cur-level-idx 0
     :frame 0
     :must-exit? false
@@ -87,9 +86,6 @@
 (defn execute-level-logic [level]
   (def hero (level :hero))
 
-  (begin-drawing)
-  (clear-background [0 0 0])
-
   (def movev
     (as?-> [0 0] _
       (if (key-down? :right) (v+ [hero-vel 0] _) _)
@@ -115,35 +111,32 @@
                       (* (:height level) block-side)
                       (:screen-offset level screen-width screen-height)))
 
+  (begin-drawing)
+  (clear-background [0 0 0])
   (each block (level :blocks) (:draw block))
   (:draw hero)
-
   (end-drawing))
-
-(var netrepl-stream nil)
 
 (defn main
   [& args]
   (setdyn :log-level 0)
 
-  (set netrepl-stream
-       (netrepl/server-single "127.0.0.1" "9365" (curenv) nil "Welcome to The House\n"))
+  (with [_ (netrepl/server-single "127.0.0.1" "9365" (curenv)
+                                  nil "Welcome to The House\n")]
+    (set-config-flags :window-highdpi :window-resizable)
+    (init-window screen-width screen-height "The House")
+    (set-target-fps 60)
+    (hide-cursor)
 
-  (set-config-flags :window-highdpi)
-  (init-window screen-width screen-height "The House")
-  (set-target-fps 60)
-  (hide-cursor)
+    (text/init)
 
-  (text/init)
+    (while (and (not (game :must-exit?)) (not (window-should-close)))
+      (increase-frame-counter game)
+      (draw-fps 0 0)
+      (case (game :phase)
+        :init (run-text text/start-text)
+        :levels (execute-level-logic (current-level game)))
+      (ev/sleep 0.001))
 
-  (while (and (not (game :must-exit?)) (not (window-should-close)))
-    (increase-frame-counter game)
-    (draw-fps 0 0)
-    (case (game :phase)
-      :init (run-text text/start-text)
-      :levels (execute-level-logic (current-level game)))
-    (ev/sleep 0.001))
-
-  (text/deinit)
-  (close-window)
-  (:close netrepl-stream))
+    (text/deinit)
+    (close-window)))
