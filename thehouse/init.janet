@@ -20,15 +20,20 @@
     :phase :init
     :state @{:init 0}})
 
-(defn current-level [game] (in (game :levels) (game :cur-level-idx)))
-(defn current-state [game] (in (game :state) (game :phase)))
+(defn exit-game [game]
+  (set (game :must-exit?) true))
+(defn curlevel [game] (in (game :levels) (game :cur-level-idx)))
+(defn curstate [game]
+  (case (game :phase)
+    :init (in (game :state) (game :phase))
+    :levels ((curlevel game) :state)))
 (defn next-level! [game]
-  (def cur-level-name ((current-level game) :name))
+  (def cur-level-name ((curlevel game) :name))
   (if (= (++ (game :cur-level-idx)) (length (game :levels)))
     (do
       (log/info* :next-level! true :exit true)
-      (set (game :must-exit?) true))
-    (log/info* :next-level true :from cur-level-name :to ((current-level game) :name))))
+      (exit-game game))
+    (log/info* :next-level true :from cur-level-name :to ((curlevel game) :name))))
 (defn maybe-exit-level [bb w h off]
   (def [[lx1 ly1] [lx2 ly2]] [off (v+ off [w h])])
   (def [[hx1 hy1] [hx2 hy2]] bb)
@@ -70,7 +75,7 @@
   (begin-drawing)
   (clear-background [0 0 0])
   (var next-pos text-screen-offset)
-  (for idx 0 (inc (current-state game))
+  (for idx 0 (inc (curstate game))
     (set next-pos
          (text/draw (text/layout (idx (texts "START")) text-width) next-pos)))
   (draw-press-space)
@@ -79,7 +84,7 @@
   (end-drawing)
 
   (when (key-pressed? :space)
-    (if (< (inc (current-state game)) 3)
+    (if (< (inc (curstate game)) 3)
       (update-in game [:state :init] inc)
       (change-phase game :levels))))
 
@@ -121,8 +126,14 @@
   [& args]
   (setdyn :log-level 0)
 
-  (with [_ (netrepl/server-single "127.0.0.1" "9365" (curenv)
-                                  nil "Welcome to The House\n")]
+  (with [netrepl-stream
+         (netrepl/server-single
+           "127.0.0.1" "9365" (curenv)
+           # Exits game when client closes connection.
+           (fn [stream] (exit-game game))
+           "Welcome to The House\n")
+         # Shuts down clients when game loop is exited.
+         (fn [stream] (:close stream) (quit))]
     (set-config-flags :window-highdpi :window-resizable)
     (init-window screen-width screen-height "The House")
     (set-target-fps 60)
@@ -135,7 +146,7 @@
       (draw-fps 0 0)
       (case (game :phase)
         :init (run-text text/start-text)
-        :levels (execute-level-logic (current-level game)))
+        :levels (execute-level-logic (curlevel game)))
       (ev/sleep 0.001))
 
     (text/deinit)
