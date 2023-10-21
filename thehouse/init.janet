@@ -1,4 +1,5 @@
 (import spork/misc)
+(import spork/netrepl)
 (import ./collision)
 (import ./levels)
 (import ./log)
@@ -117,12 +118,16 @@
   (each block (level :blocks) (:draw block))
   (:draw hero)
 
-  (ev/sleep 0.001)
   (end-drawing))
+
+(var netrepl-stream nil)
 
 (defn main
   [& args]
   (setdyn :log-level 0)
+
+  (set netrepl-stream
+       (netrepl/server-single "127.0.0.1" "9365" (curenv) nil "Welcome to The House\n"))
 
   (set-config-flags :window-highdpi)
   (init-window screen-width screen-height "The House")
@@ -136,7 +141,9 @@
     (draw-fps 0 0)
     (case (game :phase)
       :init (run-text text/start-text)
-      :levels (execute-level-logic (current-level game))))
+      :levels (execute-level-logic (current-level game)))
+    (ev/sleep 0.001))
 
   (text/deinit)
-  (close-window))
+  (close-window)
+  (:close netrepl-stream))
