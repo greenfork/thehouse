@@ -14,10 +14,11 @@
 
 (def game
   @{:levels [levels/hallway levels/corridor levels/touch-the-stone]
-    :cur-level-idx 1
+    :cur-level-idx 0
     :frame 0
     :must-exit? false
-    :phase :levels
+    # Phases: init, levels
+    :phase :init
     :state @{:init 0}})
 
 (defn exit-game [game]
@@ -92,7 +93,7 @@
   (draw-press-space)
   (end-drawing)
   (when (key-pressed? :space)
-    (set (level :phase) (:advance (levels/curstate level)))))
+    (levels/change-phase level (:advance (levels/curstate level)))))
 
 (defn execute-level-default [level]
   (def hero (level :hero))
@@ -137,7 +138,7 @@
            "Welcome to The House\n")
          # Shuts down clients when game loop is exited.
          (fn [stream] (:close stream) (quit))]
-    (set-config-flags :window-highdpi :window-resizable)
+    (set-config-flags :window-highdpi)
     # Open and close window, necessary to have a destructor so that on error
     # the window closes. Otherwise it stays open because of the running REPL.
     (with [_

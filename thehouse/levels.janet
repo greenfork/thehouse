@@ -125,6 +125,10 @@
   level)
 (defn curstate [level]
   (in (level :state) (level :phase)))
+(defn change-phase [level phase]
+  (when (not (= phase (level :phase)))
+    (log/info* :level-change-phase true :from (level :phase) :to phase)
+    (put level :phase phase)))
 
 # Callback helpers
 
@@ -236,7 +240,8 @@ D....................d
          (set (self :active) true)
          (reset-collision-cb self)
          (when (all |($ :active) (filter (type? :one :two :three) specials))
-           ((open-exit-doors-cb blocks) self))
+           ((open-exit-doors-cb blocks) self)
+           (change-phase touch-the-stone :unlocked))
          true)))
 (array/concat (touch-the-stone :blocks)
               (filter (type? :one :two :three) (touch-the-stone :specials)))
@@ -244,3 +249,11 @@ D....................d
 (set-change-color-cb :two :green (touch-the-stone :blocks) (touch-the-stone :specials))
 (set-change-color-cb :three :blue (touch-the-stone :blocks) (touch-the-stone :specials))
 (put-in touch-the-stone [:state :init] (text-logic (text/touch-the-stone-text "START") :init))
+(each ed (filter (type? :exit-door) (touch-the-stone :blocks))
+  (put ed :collision-cb (fn [self] (change-phase touch-the-stone :the-door) true)))
+(put-in touch-the-stone [:state :the-door]
+        (text-logic (text/touch-the-stone-text "THE-DOOR")
+                    :the-door
+                    (fn [self] (each ed (filter (type? :exit-door) (touch-the-stone :blocks))
+                                 (put ed :collision-cb nil)))))
+(put-in touch-the-stone [:state :unlocked] (text-logic (text/touch-the-stone-text "UNLOCKED") :unlocked))
