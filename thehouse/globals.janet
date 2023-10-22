@@ -23,3 +23,7 @@
     (array/push rs (slice col idx (+ idx n)))
     (++ idx))
   rs)
+
+# Game related
+
+(defn curlevel [game] (in (game :levels) (game :cur-level-idx)))

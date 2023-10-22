@@ -26,6 +26,8 @@
   (v*= (x :pos) [size size])
   x)
 
+# Objects
+
 (def hero-side (u 5))
 (def Hero
   @{:id nil
@@ -44,7 +46,7 @@
     :dims @[block-side block-side]
     :color :yellow
     :bb (fn [self] @[(self :pos) (v+ (self :dims) (self :pos))])
-    :collision-cb (fn [self] (flicker self :magenta))
+    :collision-cb (fn [self] (flicker self :magenta) true)
     :draw (fn [self] (draw-rectangle ;(self :pos) ;(self :dims) (self :color)))})
 (defn <block> [& pairs] (misc/make Block ;pairs))
 (defn <door> [& pairs] (misc/make Block :color :brown ;pairs))
@@ -55,6 +57,14 @@
 (defn <one> [& pairs] (misc/make SpecialBlock :type :one ;pairs))
 (defn <two> [& pairs] (misc/make SpecialBlock :type :two ;pairs))
 (defn <three> [& pairs] (misc/make SpecialBlock :type :three ;pairs))
+(defn <four> [& pairs] (misc/make SpecialBlock :type :four ;pairs))
+(defn <five> [& pairs] (misc/make SpecialBlock :type :five ;pairs))
+(defn <six> [& pairs] (misc/make SpecialBlock :type :six ;pairs))
+(defn <seven> [& pairs] (misc/make SpecialBlock :type :seven ;pairs))
+(defn <eight> [& pairs] (misc/make SpecialBlock :type :eight ;pairs))
+(defn <nine> [& pairs] (misc/make SpecialBlock :type :nine ;pairs))
+
+# Levels
 
 (var- level-object-counter 0)
 (defn- lin-col [patt] ~(* (line) (column) ,patt))
@@ -73,7 +83,14 @@
     :one ,(level-object "1" <one>)
     :two ,(level-object "2" <two>)
     :three ,(level-object "3" <three>)
-    :cell (+ :block :space :hero :door :exit-door :one :two :three)
+    :four ,(level-object "4" <four>)
+    :five ,(level-object "5" <five>)
+    :six ,(level-object "6" <six>)
+    :seven ,(level-object "7" <seven>)
+    :eight ,(level-object "8" <eight>)
+    :nine ,(level-object "9" <nine>)
+    :cell (+ :block :space :hero :door :exit-door
+             :one :two :three :four :five :six :seven :eight :nine)
     :row (* (some :cell) (? "\n"))
     :main (some :row)})
 
@@ -86,6 +103,7 @@
     :ascii nil
     :hero nil
     :blocks nil
+    :specials nil
     :width (fn [self] (find-index newline? (self :ascii)))
     :height (fn [self] (inc (count newline? (self :ascii))))
     :screen-offset (fn [self sw sh]
@@ -101,34 +119,27 @@
       (map |(unitize-obj $ block-side))
       (map |(apply-offset $ (:screen-offset level screen-width screen-height)))))
   (put level :hero (find (type? :hero) objects))
-  (put level :blocks (filter (type? :block :exit-door :one :two :three) objects))
+  (put level :blocks (filter (type? :block :exit-door) objects))
+  (put level :specials (filter (type? :one :two :three :four :five
+                                      :six :seven :eight :nine) objects))
   level)
 (defn curstate [level]
   (in (level :state) (level :phase)))
 
 # Callback helpers
 
-(defn- self-destroy-cb [col]
-  (fn [self] (array/remove col (find-index |(= ($ :id) (self :id)) col))))
 (defn- open-exit-doors-cb [col]
   (fn [self]
     (each ed (filter (type? :exit-door) col)
       (array/remove col (find-index |(= ($ :id) (ed :id)) col)))))
-(defn- reset-collision-cb [obj] (set (obj :collision-cb) (fn [self])))
-(defn- set-change-color-cb [type color col]
-  (def obj (find (type? type) col))
-  (set (obj :collision-cb)
-       (fn [self]
-         (log/debug* type "active")
-         (change-color self color)
-         (set (self :active) true)
-         (reset-collision-cb self)
-         (when (all |($ :active) (filter (type? :one :two :three) col))
-           ((open-exit-doors-cb col) self)))))
+(defn destroy-collision-cb [col]
+  (fn [self]
+    (each c col
+      (put c :collision-cb false))))
 
 # Logic helpers
 
-(defn- text-logic [text]
+(defn- text-logic [text curphase &opt on-finishing]
   @{:run (fn [self]
            (text/draw (text/layout (in (self :text) (self :idx)) text-width)
                       text-in-level-screen-offset))
@@ -136,8 +147,10 @@
                (if (< (inc (self :idx)) (length (self :text)))
                  (do
                    (+= (self :idx) 1)
-                   :init)
-                 :default))
+                   curphase)
+                 (do
+                   (when on-finishing (on-finishing self))
+                   :default)))
     :text text
     :idx 0})
 
@@ -161,7 +174,7 @@ D................d
 (def hallway (<level> :hallway "Hallway" hallway-ascii))
 (each exit-door (filter (type? :exit-door) (hallway :blocks))
   (set (exit-door :collision-cb) (open-exit-doors-cb (hallway :blocks))))
-(put-in hallway [:state :init] (text-logic (text/hallway-text "START")))
+(put-in hallway [:state :init] (text-logic (text/hallway-text "START") :init))
 
 ############
 # Corridor #
@@ -169,15 +182,31 @@ D................d
 
 (def corridor-ascii ``
 BBBBBBBBBBBBBBBBBBBBB
-D@..................d
-D...................d
+D@...1........2.....d
+D....1........2.....d
 BBBBBBBBBBBBBBBBBBBBB
 ``)
 
 (def corridor (<level> :corridor "Corridor" corridor-ascii))
 (each exit-door (filter (type? :exit-door) (corridor :blocks))
   (set (exit-door :collision-cb) (open-exit-doors-cb (corridor :blocks))))
-(put-in corridor [:state :init] (text-logic (text/corridor-text "START")))
+(put-in corridor [:state :init] (text-logic (text/corridor-text "START") :init))
+(array/concat (corridor :blocks)
+              (filter (type? :one :two) (corridor :specials)))
+(each one (filter (type? :one) (corridor :specials))
+  (put one :collision-cb (fn [self] (put corridor :phase :corridor) false))
+  (put one :draw false))
+(put-in corridor [:state :corridor]
+        (text-logic (text/corridor-text "CORRIDOR")
+                    :corridor
+                    (destroy-collision-cb (filter (type? :one) (corridor :specials)))))
+(each two (filter (type? :two) (corridor :specials))
+  (put two :collision-cb (fn [self] (put corridor :phase :tunnel) false))
+  (put two :draw false))
+(put-in corridor [:state :tunnel]
+        (text-logic (text/corridor-text "TUNNEL")
+                    :tunnel
+                    (destroy-collision-cb (filter (type? :two) (corridor :specials)))))
 
 ###################
 # Touch the Stone #
@@ -197,7 +226,21 @@ D....................d
 ``)
 
 (def touch-the-stone (<level> :touch-the-stone "Touch the Stone" touch-the-stone-ascii))
-(set-change-color-cb :one :red (touch-the-stone :blocks))
-(set-change-color-cb :two :green (touch-the-stone :blocks))
-(set-change-color-cb :three :blue (touch-the-stone :blocks))
-(put-in touch-the-stone [:state :init] (text-logic (text/touch-the-stone-text "START")))
+(defn- reset-collision-cb [obj] (set (obj :collision-cb) (fn [self] true)))
+(defn- set-change-color-cb [type color blocks specials]
+  (def obj (find (type? type) specials))
+  (set (obj :collision-cb)
+       (fn [self]
+         (log/debug* type "active")
+         (change-color self color)
+         (set (self :active) true)
+         (reset-collision-cb self)
+         (when (all |($ :active) (filter (type? :one :two :three) specials))
+           ((open-exit-doors-cb blocks) self))
+         true)))
+(array/concat (touch-the-stone :blocks)
+              (filter (type? :one :two :three) (touch-the-stone :specials)))
+(set-change-color-cb :one :red (touch-the-stone :blocks) (touch-the-stone :specials))
+(set-change-color-cb :two :green (touch-the-stone :blocks) (touch-the-stone :specials))
+(set-change-color-cb :three :blue (touch-the-stone :blocks) (touch-the-stone :specials))
+(put-in touch-the-stone [:state :init] (text-logic (text/touch-the-stone-text "START") :init))

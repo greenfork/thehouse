@@ -57,29 +57,26 @@
     (when (and xcorr ycorr)
       [xcorr ycorr])))
 
-(defn correct-hero-position [hero blocks movev]
-  (each block blocks
-    (when-let [[xcorr ycorr] (correct-coord (:bb hero) (:bb block))]
-      # When movement is only on one axis, compensate to this axis.
-      # When movement is on both axes, choose the minimum compensation.
-      (def compensation
-        (match movev
-          [0 0] (error "movev can't be [0 0], must be nil")
-          [_ 0] [xcorr 0]
-          [0 _] [0 ycorr]
-          [_ _] (if (> (math/abs ycorr) (math/abs xcorr))
-                  [xcorr 0]
-                  [0 ycorr])))
-      (def new-pos (v+ (hero :pos) compensation))
-      # (log/trace* :correction [xcorr ycorr]
-      #             :compensation compensation
-      #             :new-pos new-pos
-      #             :movev movev)
-      (set (hero :pos) new-pos))))
+(defn correct-hero-position [hero block movev]
+  (when-let [[xcorr ycorr] (correct-coord (:bb hero) (:bb block))]
+    # When movement is only on one axis, compensate to this axis.
+    # When movement is on both axes, choose the minimum compensation.
+    (def compensation
+      (match movev
+        [0 0] (error "movev can't be [0 0], must be nil")
+        [_ 0] [xcorr 0]
+        [0 _] [0 ycorr]
+        [_ _] (if (> (math/abs ycorr) (math/abs xcorr))
+                [xcorr 0]
+                [0 ycorr])))
+    (def new-pos (v+ (hero :pos) compensation))
+    # (log/trace* :correction [xcorr ycorr]
+    #             :compensation compensation
+    #             :new-pos new-pos
+    #             :movev movev)
+    (set (hero :pos) new-pos)))
 
-(defn filter-collided [target-bb blocks]
-  (->> blocks
-    (filter |(correct-coord target-bb (:bb $)))
-    # Sorting makes "sliding" movement possible because collision
-    # with several objects first accounts for the nearest one.
-    (sorted-by |(bb-distance target-bb (:bb $)))))
+# Sorting makes "sliding" movement possible because collision
+# with several objects first accounts for the nearest one.
+(defn sort-by-bb-distance [target-bb blocks]
+  (sorted-by |(bb-distance target-bb (:bb $)) blocks))

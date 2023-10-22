@@ -14,7 +14,7 @@
 
 (def game
   @{:levels [levels/hallway levels/corridor levels/touch-the-stone]
-    :cur-level-idx 0
+    :cur-level-idx 1
     :frame 0
     :must-exit? false
     :phase :levels
@@ -22,7 +22,6 @@
 
 (defn exit-game [game]
   (set (game :must-exit?) true))
-(defn curlevel [game] (in (game :levels) (game :cur-level-idx)))
 (defn curstate [game]
   (case (game :phase)
     :init (in (game :state) (game :phase))
@@ -83,7 +82,7 @@
       (update-in game [:state :init] inc)
       (change-phase game :levels))))
 
-(defn execute-level-init [level]
+(defn execute-level-text [level]
   (def hero (level :hero))
   (begin-drawing)
   (clear-background [0 0 0])
@@ -93,7 +92,7 @@
   (draw-press-space)
   (end-drawing)
   (when (key-pressed? :space)
-    (set (level :phase) (:advance (curstate level)))))
+    (set (level :phase) (:advance (levels/curstate level)))))
 
 (defn execute-level-default [level]
   (def hero (level :hero))
@@ -108,15 +107,12 @@
   (when movev
     (:move hero movev)
 
-    (each block (collision/filter-collided (:bb hero) (level :blocks))
-      (when (collision/correct-coord (:bb hero) (:bb block))
-        (:collision-cb block)))
-
-    # Need to recalculate collided blocks because callbacks above could
-    # remove them.
-    (collision/correct-hero-position
-      hero (collision/filter-collided (:bb hero) (level :blocks)) movev)
-
+    (each block
+      (filter (fn [b]
+                (and (collision/correct-coord (:bb hero) (:bb b))
+                     (:collision-cb b)))
+              (collision/sort-by-bb-distance (:bb hero) (level :blocks)))
+      (collision/correct-hero-position hero block movev))
     (maybe-exit-level (:bb hero)
                       (* (:width level) block-side)
                       (* (:height level) block-side)
@@ -141,7 +137,7 @@
            "Welcome to The House\n")
          # Shuts down clients when game loop is exited.
          (fn [stream] (:close stream) (quit))]
-    (set-config-flags :window-highdpi)
+    (set-config-flags :window-highdpi :window-resizable)
     # Open and close window, necessary to have a destructor so that on error
     # the window closes. Otherwise it stays open because of the running REPL.
     (with [_
@@ -158,7 +154,7 @@
           :levels (let [level (curlevel game)]
                     (case (level :phase)
                       :default (execute-level-default level)
-                      :init (execute-level-init level))))
+                      (execute-level-text level))))
         # Yield control to other fibers for things such as REPL and animation.
         (ev/sleep 0.001))
       (text/deinit))))
