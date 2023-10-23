@@ -161,6 +161,11 @@
                    :default)))
     :text text
     :idx 0})
+(defn- remove-from-level [level id]
+  (when-let [idx (find-index |(= id ($ :id)) (level :blocks))]
+    (array/remove (level :blocks) idx))
+  (when-let [idx (find-index |(= id ($ :id)) (level :specials))]
+    (array/remove (level :specials) idx)))
 
 ###########
 # Hallway #
@@ -367,4 +372,74 @@ D....................d
   (put one :collision-cb one-cb)
   (put two :collision-cb two-cb)
   (put three :collision-cb three-cb)
+  level)
+
+############
+# Clean me #
+############
+
+(def clean-me-ascii ``
+.BBBBBBBBB.BBBBBBBBBB.
+.B.1.....B.B2.......B.
+.B.......B.B........B.
+.BBB.....BBBBB......B.
+D@...................d
+D................1...d
+.BBB.....BBBBB......B.
+.B......1B.B........B.
+.B.......B.B........B.
+.BBBBBBBBB.BBBBBBBBBB.
+``)
+
+(defn make-clean-me []
+  (def level (<level> :clean-me "Clean me" clean-me-ascii))
+  (put-in level [:state :init] (text-logic (text/clean-me-text "START") :init))
+  (put-in level [:state :the-door] (text-logic (text/clean-me-text "THE-DOOR") :the-door))
+  (put-in level [:state :trash] (text-logic (text/clean-me-text "TRASH") :trash))
+  (put-in level [:state :two-trash] (text-logic (text/clean-me-text "TWO-TRASH") :two-trash))
+  (put-in level [:state :bin] (text-logic (text/clean-me-text "BIN") :bin))
+  (put-in level [:state :take-out] (text-logic (text/clean-me-text "TAKE-OUT") :take-out))
+  (put-in level [:state :take-out-2] (text-logic (text/clean-me-text "TAKE-OUT-2") :take-out-2))
+  (put-in level [:state :done] (text-logic (text/clean-me-text "DONE") :done))
+  (each ed (filter (type? :exit-door) (level :blocks))
+    (put ed :collision-cb (fn [self] (change-phase level :the-door) true)))
+  (put-in level [:state :has-trash] false)
+  (def trashes (filter (type? :one) (level :specials)))
+  (def bin (find (type? :two) (level :specials)))
+  (array/concat (level :blocks) trashes bin)
+  (var trash-event-fired false)
+  (each trash trashes
+    (put trash :color :gray)
+    (put trash :collision-cb
+         (fn [self]
+           (if (get-in level [:state :has-trash])
+             (do
+               (change-phase level :two-trash)
+               true)
+             (do
+               (when (not trash-event-fired)
+                 (set trash-event-fired true)
+                 (change-phase level :trash))
+               (log/debug* :trash-taken true)
+               (put-in level [:state :has-trash] true)
+               (remove-from-level level (self :id))
+               false)))))
+  (put bin :color :green)
+  (var bin-event-fired false)
+  (var take-out-idx 0)
+  (put bin :collision-cb
+       (fn [self]
+         (if (get-in level [:state :has-trash])
+           (do
+             (case take-out-idx
+               0 (do (+= take-out-idx 1) (change-phase level :take-out))
+               1 (do (+= take-out-idx 1) (change-phase level :take-out-2))
+               2 (do ((open-exit-doors-cb (level :blocks)) self) (change-phase level :done)))
+             (log/debug* :trash-thrown true)
+             (put-in level [:state :has-trash] false))
+           (do
+             (when (not bin-event-fired)
+               (set bin-event-fired true)
+               (change-phase level :bin))))
+         true))
   level)

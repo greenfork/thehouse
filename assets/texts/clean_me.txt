@@ -1,0 +1,47 @@
+.START
+
+"YOU.."
+
+What?!!
+
+"YOU CLEAN THIS ROOM"
+
+"YOU TAKE MY TRASH"
+
+"YOU PUT IT AWAY"
+
+"YOU WALK"
+
+The deafening voice stopped as suddenly as it started.
+
+.THE-DOOR
+
+I guess I should take out the trash?
+
+.TRASH
+
+I should find somewhere to put it...
+
+.TWO-TRASH
+
+I can't take more, I should put out the one I already have first.
+
+.BIN
+
+This is the bin I should take out the trash to.
+
+.TAKE-OUT
+
+Alright, one piece of trash less.
+
+.TAKE-OUT-2
+
+Another one done!
+
+.DONE
+
+"GOOD"
+
+"COME"
+
+Oh God, I almost forgot about this voice.

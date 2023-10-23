@@ -85,7 +85,7 @@
 ###############
 
 (def- text-grammar
-  ~{:title (* "." (<- (some (+ (range "AZ") (set "-")))) "\n\n")
+  ~{:title (* "." (<- (some (+ (range "AZ") (range "09") (set "-")))) "\n\n")
     :single-text (* (not :title) (<- (some (if-not "\n\n" 1))) (? "\n\n"))
     :many-texts (group (some :single-text))
     :entry (* :s* :title :many-texts)
@@ -107,3 +107,4 @@
 (def corridor-text (<text> "corridor"))
 (def touch-the-stone-text (<text> "touch_the_stone"))
 (def dance-on-the-floor-text (<text> "dance_on_the_floor"))
+(def clean-me-text (<text> "clean_me"))

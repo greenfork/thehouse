@@ -14,8 +14,8 @@
 
 (def game
   @{:levels [levels/hallway levels/corridor levels/touch-the-stone
-             (levels/make-dance-on-the-floor)]
-    :cur-level-idx 3
+             (levels/make-dance-on-the-floor) (levels/make-clean-me)]
+    :cur-level-idx 4
     :frame 0
     :must-exit? false
     # Phases: init, levels
@@ -32,7 +32,7 @@
   (def cur-level-name ((curlevel game) :name))
   (if (= (++ (game :cur-level-idx)) (length (game :levels)))
     (do
-      (log/info* :next-level! true :exit true)
+      (log/info* :next-level true :exit true)
       (exit-game game))
     (log/info* :next-level true :from cur-level-name :to ((curlevel game) :name))))
 (defn maybe-exit-level [bb w h off]
