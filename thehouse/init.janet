@@ -13,12 +13,13 @@
 (def vel-diag-mult (math/sin (/ math/pi 4)))
 
 (def game
-  @{:levels [levels/hallway levels/corridor levels/touch-the-stone]
-    :cur-level-idx 0
+  @{:levels [levels/hallway levels/corridor levels/touch-the-stone
+             (levels/make-dance-on-the-floor)]
+    :cur-level-idx 3
     :frame 0
     :must-exit? false
     # Phases: init, levels
-    :phase :init
+    :phase :levels
     :state @{:init 0}})
 
 (defn exit-game [game]

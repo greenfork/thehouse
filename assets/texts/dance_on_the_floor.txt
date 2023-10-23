@@ -8,9 +8,18 @@ It is the same story again. The scribbling says "Dance on the floor".
 
 Hmm, dancing.
 
+.DONT-TOUCH-WALLS
+
+I don't think I should touch the walls again. I should probably
+investigate the ground.
+
 .PRESSED
 
 A low humming noise comes from... the downside?
+
+.FLICKERED
+
+I swear I heard something just now.
 
 .LOST
 
@@ -18,4 +27,4 @@ The noise is gone! I wonder if there's some pattern to follow.
 
 .UNLOCKED
 
-A screeching sound probably means the the door is unlocked now.
+A screeching sound probably means the door is unlocked now.

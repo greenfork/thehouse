@@ -10,12 +10,16 @@
    (math/round (* screen-height (/ 3 4)))])
 
 (defn flicker [obj color]
+  (def cur-draw (obj :draw))
   (def cur-color (obj :color))
+  (def cur-collision-cb (obj :collision-cb))
   (when (not= cur-color color)
-    (set (obj :color) color)
+    (put obj :color color)
+    (put obj :draw nil)
     (ev/spawn
       (ev/sleep 0.2)
-      (set (obj :color) cur-color))))
+      (put obj :color cur-color)
+      (put obj :draw cur-draw))))
 (defn change-color [obj color]
   (set (obj :color) color))
 
@@ -257,3 +261,110 @@ D....................d
                     (fn [self] (each ed (filter (type? :exit-door) (touch-the-stone :blocks))
                                  (put ed :collision-cb nil)))))
 (put-in touch-the-stone [:state :unlocked] (text-logic (text/touch-the-stone-text "UNLOCKED") :unlocked))
+
+######################
+# Dance on the Floor #
+######################
+
+(def dance-on-the-floor-ascii ``
+.BBBBBBBBBBBBBBBBBBBB.
+.B..................B.
+.B....BBB1....BBB...B.
+.B....B.B.....B.B...B.
+D@....BBB.....BBB....d
+D....................d
+.B.........BB.......B.
+.B.....2...BB.....3.B.
+.B..................B.
+.BBBBBBBBBBBBBBBBBBBB.
+``)
+
+(defn make-dance-on-the-floor []
+  (def level (<level> :dance-on-the-floor "Dance on the Floor" dance-on-the-floor-ascii))
+  (put-in level [:state :init] (text-logic (text/dance-on-the-floor-text "START") :init))
+  (put-in level [:state :the-door] (text-logic (text/dance-on-the-floor-text "THE-DOOR") :the-door))
+  (put-in level [:state :pressed] (text-logic (text/dance-on-the-floor-text "PRESSED") :pressed))
+  (put-in level [:state :flickered] (text-logic (text/dance-on-the-floor-text "FLICKERED") :flickered))
+  (put-in level [:state :lost] (text-logic (text/dance-on-the-floor-text "LOST") :lost))
+  (put-in level [:state :dont-touch-walls] (text-logic (text/dance-on-the-floor-text "DONT-TOUCH-WALLS") :dont-touch-walls))
+  (put-in level [:state :unlocked] (text-logic (text/dance-on-the-floor-text "UNLOCKED") :unlocked))
+  (each ed (filter (type? :exit-door) (level :blocks))
+    (put ed :collision-cb
+         (fn [self]
+           (each b (filter (type? :block) (level :blocks))
+             (put b :collision-cb
+                  (fn [self]
+                    (change-phase level :dont-touch-walls)
+                    (each bl (filter (type? :block) (level :blocks))
+                      (put bl :collision-cb nil))
+                    true)))
+           (change-phase level :the-door)
+           true)))
+  (def one (find (type? :one) (level :specials)))
+  (def two (find (type? :two) (level :specials)))
+  (def three (find (type? :three) (level :specials)))
+  (each special [one two three]
+    (put special :draw false)
+    (array/concat (level :blocks) special))
+  (var pressed-event-fired false)
+  (var flickered-event-fired false)
+  (var lost-event-fired false)
+  (def nothing-cb (fn [self] false))
+  (def one-cb
+    (fn [self]
+      (log/debug* :one "active")
+      (put self :active true)
+      (put self :color :red)
+      (put self :draw nil)
+      (when (not pressed-event-fired)
+        (set pressed-event-fired true)
+        (change-phase level :pressed))
+      (put self :collision-cb nothing-cb)
+      false))
+  (def two-cb
+    (fn [self]
+      (if (one :active)
+        (do
+          (log/debug* :two "active")
+          (put self :active true)
+          (put self :color :green)
+          (put self :draw nil)
+          (put self :collision-cb nothing-cb))
+        (do
+          (log/debug* :two "flickered")
+          (when (not flickered-event-fired)
+            (set flickered-event-fired true)
+            (change-phase level :flickered))
+          (flicker self :green)))
+      false))
+  (def three-cb
+    (fn [self]
+      (if (and (one :active) (two :active))
+        (do
+          (log/debug* :three "open-the-door")
+          ((open-exit-doors-cb (level :blocks)) self)
+          (change-phase level :unlocked)
+          (put self :color :blue)
+          (put self :draw nil)
+          (put self :collision-cb nothing-cb))
+        (do
+          (log/debug* :three "flickered")
+          (flicker self :blue)
+          (if (and (not lost-event-fired)
+                   (or (one :active) (two :active)))
+            (do
+              (set lost-event-fired true)
+              (change-phase level :lost))
+            (when (not flickered-event-fired)
+              (set flickered-event-fired true)
+              (change-phase level :flickered)))
+          (each hatch [one two]
+            (put hatch :active false)
+            (put hatch :draw (fn [self] false)))
+          (put one :collision-cb one-cb)
+          (put two :collision-cb two-cb)))
+      false))
+  (put one :collision-cb one-cb)
+  (put two :collision-cb two-cb)
+  (put three :collision-cb three-cb)
+  level)
