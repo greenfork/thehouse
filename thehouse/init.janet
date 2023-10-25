@@ -13,9 +13,7 @@
 (def vel-diag-mult (math/sin (/ math/pi 4)))
 
 (def game
-  @{:levels [levels/hallway levels/corridor levels/touch-the-stone
-             (levels/make-dance-on-the-floor) (levels/make-clean-me)]
-    :cur-level-idx 4
+  @{:cur-level-idx 5
     :frame 0
     :must-exit? false
     # Phases: init, levels
@@ -35,6 +33,9 @@
       (log/info* :next-level true :exit true)
       (exit-game game))
     (log/info* :next-level true :from cur-level-name :to ((curlevel game) :name))))
+(defn change-phase [game new-phase]
+  (log/info* :change-phase true :from (game :phase) :to new-phase)
+  (set (game :phase) new-phase))
 (defn maybe-exit-level [bb w h off]
   (def [[lx1 ly1] [lx2 ly2]] [off (v+ off [w h])])
   (def [[hx1 hy1] [hx2 hy2]] bb)
@@ -45,9 +46,13 @@
   #             :bb-max (bb 1))
   (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
     (next-level! game)))
-(defn change-phase [game new-phase]
-  (log/info* :change-phase true :from (game :phase) :to new-phase)
-  (set (game :phase) new-phase))
+
+# Needs forward declaration.
+(def levels [levels/hallway levels/corridor levels/touch-the-stone
+             (levels/make-dance-on-the-floor) (levels/make-clean-me)
+             (levels/make-final (fn [] (change-phase game :final)))])
+(put game :levels levels)
+
 (defn increase-frame-counter [game]
   (if (< (game :frame) math/int-max)
     (+= (game :frame) 1)
@@ -156,7 +161,8 @@
           :levels (let [level (curlevel game)]
                     (case (level :phase)
                       :default (execute-level-default level)
-                      (execute-level-text level))))
+                      (execute-level-text level)))
+          :final (exit-game game))
         # Yield control to other fibers for things such as REPL and animation.
         (ev/sleep 0.001))
       (text/deinit))))

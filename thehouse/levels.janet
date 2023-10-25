@@ -443,3 +443,48 @@ D................1...d
                (change-phase level :bin))))
          true))
   level)
+
+#########
+# Final #
+#########
+
+(def final-ascii ``
+........BBBBBBBBBBBBB.
+........B...........B.
+........B...........B.
+.BBBBBBBB........222B.
+d@......1........29.B.
+d.......1........29.B.
+.BBBBBBBB........222B.
+........B...........B.
+........B...........B.
+........BBBBBBBBBBBBB.
+``)
+
+(defn make-final [exit-game]
+  (def level (<level> :final "Final" final-ascii))
+  (put-in level [:state :init] (text-logic (text/final-text "START") :init))
+  (put-in level [:state :try-exit] (text-logic (text/final-text "TRY-EXIT") :try-exit))
+  (put-in level [:state :exit] (text-logic (text/final-text "EXIT") :exit (fn [_] (exit-game))))
+  (put-in level [:state :closer]
+          (text-logic (text/final-text "CLOSER") :closer
+                      (destroy-collision-cb (filter (type? :one) (level :specials)))))
+  (put-in level [:state :stone-table] (text-logic (text/final-text "STONE-TABLE")
+                                                  :stone-table (fn [_] (exit-game))))
+  (array/concat (level :blocks) (filter (type? :one :two :nine) (level :specials)))
+  (each one (filter (type? :one) (level :specials))
+    (put one :collision-cb (fn [self] (put level :phase :closer) false))
+    (put one :draw false))
+  (each two (filter (type? :two) (level :specials))
+    (put two :collision-cb (fn [self] (put level :phase :stone-table) false))
+    (put two :draw false))
+  (each nine (filter (type? :nine) (level :specials))
+    (put nine :color :gold))
+  (each ed (filter (type? :exit-door) (level :blocks))
+    (put ed :collision-cb (fn [self]
+                            (change-phase level :try-exit)
+                            (put self :collision-cb (fn [self]
+                                                      (change-phase level :exit)
+                                                      true))
+                            true)))
+  level)

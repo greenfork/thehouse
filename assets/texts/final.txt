@@ -1,0 +1,67 @@
+.START
+
+"COME"
+
+"YOU DESERVE A REWARD"
+
+"OR RUN AWAY AND YOU WILL NEVER SEE YOUR FRIEND AGAIN"
+
+The dark end of the room gets lit. In a dim light some kind of a stone
+table appears next to the wall.
+
+...
+
+Should I go there?
+
+.TRY-EXIT
+
+Should I really quit while I can?
+
+.EXIT
+
+The door opens and lets me out.
+
+I will forget this as a bad dream and will never come back to this house.
+
+.CLOSER
+
+Approaching with a shivering heart I see a strange figure slowly appearing
+on the stone table.
+
+.STONE-TABLE
+
+On the stone table there's a body, hardly recognizable as a human.
+
+The roots coming from the stomach, to the ground, look like giant roots of a tree.
+
+And the face is too familiar, this is my old friend Evan!
+
+"YOU HAVE COME FOR YOUR REWARD"
+
+"YOU WERE GOOD TO ME AND I AM GOOD TO YOU"
+
+"YOU TOUCHED MY STONE, YOU DANCED ON MY GROUND, YOU CLEANED MY CHAMBERS"
+
+"YOU CAN MEET YOUR FRIEND NOW"
+
+"HE WAS GOOD TO ME TOO"
+
+"AND HE CONTINUES TO BE GOOD"
+
+"AS WILL YOU"
+
+Listening to this mesmerizing voice I didn't notice the roots slowly wrapping
+my feet and pulling me down.
+
+"I have to get out!" - my brain screamed at my paralized body.
+
+I can't do anything. I'm stuck.
+
+Please, God, help me!
+
+...
+
+I screamed and screamed. Until my lungs had no air in them. And then everything
+turned black.
+
+"YOU WILL BE GOOD..."

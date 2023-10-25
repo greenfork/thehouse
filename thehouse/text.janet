@@ -108,3 +108,4 @@
 (def touch-the-stone-text (<text> "touch_the_stone"))
 (def dance-on-the-floor-text (<text> "dance_on_the_floor"))
 (def clean-me-text (<text> "clean_me"))
+(def final-text (<text> "final"))
