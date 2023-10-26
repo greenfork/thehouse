@@ -1,0 +1,10 @@
+.BBBBBBBBB.BBBBBBBBBB.
+.B.1.....B.B2.......B.
+.B.......B.B........B.
+.BBB.....BBBBB......B.
+D@...................d
+D................1...d
+.BBB.....BBBBB......B.
+.B......1B.B........B.
+.B.......B.B........B.
+.BBBBBBBBB.BBBBBBBBBB.
