@@ -100,6 +100,7 @@
     :main (some :row)})
 
 (defn- newline? [x] (or (= x (chr "\n")) (= x (chr "\r"))))
+(defn- newline-count? [x] (= x (chr "\n")))
 (def Level
   @{:id nil
     :name nil
@@ -110,7 +111,7 @@
     :blocks nil
     :specials nil
     :width (fn [self] (find-index newline? (self :ascii)))
-    :height (fn [self] (inc (count newline? (self :ascii))))
+    :height (fn [self] (inc (count newline-count? (self :ascii))))
     :screen-offset (fn [self sw sh]
                      [(math/round (- (/ sw 2) (* (/ (:width self) 2) block-side)))
                       (math/round (- (/ sh 2) (* (/ (:height self) 2) block-side) (/ sh 8)))])})
