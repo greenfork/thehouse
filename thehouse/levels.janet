@@ -95,10 +95,11 @@
     :nine ,(level-object "9" <nine>)
     :cell (+ :block :space :hero :door :exit-door
              :one :two :three :four :five :six :seven :eight :nine)
-    :row (* (some :cell) (? "\n"))
+    :newline (+ "\n" "\r\n")
+    :row (* (some :cell) (? :newline))
     :main (some :row)})
 
-(defn- newline? [x] (= x (chr "\n")))
+(defn- newline? [x] (or (= x (chr "\n")) (= x (chr "\r"))))
 (def Level
   @{:id nil
     :name nil
