@@ -1,0 +1,8 @@
+#!/bin/sh
+mkdir TheHouse.app
+mkdir TheHouse.app/Contents
+mkdir TheHouse.app/Contents/MacOS
+cp build/thehouse TheHouse.app/Contents/MacOS
+chmod 755 TheHouse.app/Contents/MacOS/thehouse
+cp build-macos/Info.plist TheHouse.app/Contents/
+ditto -c -k --keepParent TheHouse.app thehouse.zip
