@@ -1,7 +1,7 @@
 (declare-project
   :name "thehouse"
   :description ```Horror game ```
-  :version "0.0.0"
+  :version "1.0.0"
   :dependencies [{:url "https://github.com/ianthehenry/judge.git"
                   :tag "v2.7.0"}])
 
