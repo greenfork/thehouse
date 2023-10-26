@@ -13,11 +13,11 @@
 (def vel-diag-mult (math/sin (/ math/pi 4)))
 
 (def game
-  @{:cur-level-idx 5
+  @{:cur-level-idx 0
     :frame 0
     :must-exit? false
-    # Phases: init, levels
-    :phase :levels
+    # Phases: init, levels, final
+    :phase :init
     :state @{:init 0}})
 
 (defn exit-game [game]
@@ -47,7 +47,6 @@
   (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
     (next-level! game)))
 
-# Needs forward declaration.
 (def levels [levels/hallway levels/corridor levels/touch-the-stone
              (levels/make-dance-on-the-floor) (levels/make-clean-me)
              (levels/make-final (fn [] (change-phase game :final)))])
@@ -133,7 +132,8 @@
 
 (defn main
   [& args]
-  (setdyn :log-level 0)
+  (setdyn :log-level 2)
+  (set-config-flags :window-resizable :vsync-hint)
 
   # Start a repl to connect to.
   (with [netrepl-stream
@@ -144,7 +144,6 @@
            "Welcome to The House\n")
          # Shuts down clients when game loop is exited.
          (fn [stream] (:close stream) (quit))]
-    (set-config-flags :window-highdpi)
     # Open and close window, necessary to have a destructor so that on error
     # the window closes. Otherwise it stays open because of the running REPL.
     (with [_
