@@ -45,8 +45,8 @@ jobs:
         shell: cmd
       - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet\dist&& set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\dist&& set JANET_PATH=${{ github.workspace }}\janet&& janet bootstrap.janet
         shell: cmd
-      - name: jpm load-lockfile
-        run: cd ${{ github.workspace }} && jpm load-lockfile
+      - name: jpm deps
+        run: cd ${{ github.workspace }} && jpm deps
         shell: cmd
       - name: jpm build
         run: jpm build
