@@ -85,8 +85,9 @@
 ###############
 
 (def- text-grammar
-  ~{:title (* "." (<- (some (+ (range "AZ") (range "09") (set "-")))) "\n\n")
-    :single-text (* (not :title) (<- (some (if-not "\n\n" 1))) (? "\n\n"))
+  ~{:double-newline (+ "\n\n" "\r\n\r\n")
+    :title (* "." (<- (some (+ (range "AZ") (range "09") (set "-")))) :double-newline)
+    :single-text (* (not :title) (<- (some (if-not :double-newline 1))) (? :double-newline))
     :many-texts (group (some :single-text))
     :entry (* :s* :title :many-texts)
     :main (cmt (some :entry) ,(fn [& entries]
