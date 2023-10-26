@@ -6,7 +6,8 @@
     :exit-door "d"
     :cell (+ :block :space :hero :door :exit-door)
     :newline (+ "\n" "\r\n" "\r")
-    :row (* (some :cell) (? :newline))
+    # :row (* (some :cell) (? :newline))
+    :row (* (some :cell) (any (if-not :cell 1)))
     :main (some :row)})
 
 (def hallway-ascii ``

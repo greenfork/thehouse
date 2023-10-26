@@ -96,7 +96,8 @@
     :cell (+ :block :space :hero :door :exit-door
              :one :two :three :four :five :six :seven :eight :nine)
     :newline (+ "\n" "\r\n")
-    :row (* (some :cell) (? :newline))
+    # :row (* (some :cell) (? :newline))
+    :row (* (some :cell) (any (if-not :cell 1)))
     :main (some :row)})
 
 (defn- newline? [x] (or (= x (chr "\n")) (= x (chr "\r"))))
