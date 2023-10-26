@@ -10,8 +10,7 @@
     :row (* (some :cell) (any (if-not :cell 1)))
     :main (some :row)})
 
-(def hallway-ascii ``
-.......DD.........
+(def hallway-ascii ``.......DD.........
 .BBBBBB..BBBBBBBB.
 .B..............B.
 D@..............B.
@@ -20,7 +19,6 @@ D................d
 .B..............B.
 .B..............B.
 .BBBBBBB..BBBBBBB.
-........DD......
-``)
+........DD........``)
 
 (printf "%q" (peg/match level-grammar hallway-ascii))
