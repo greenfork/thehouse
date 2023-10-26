@@ -5,7 +5,6 @@
     :door "D"
     :exit-door "d"
     :cell (+ :block :space :hero :door :exit-door)
-    # :newline (+ "\n" "\r\n" "\r")
     :row (* (some :cell) (? "\n"))
     :main (some :row)})
 
@@ -18,6 +17,7 @@ D................d
 .B..............B.
 .B..............B.
 .BBBBBBB..BBBBBBB.
-........DD........``)
+........DD........
+``)
 
 (printf "%q" (peg/match level-grammar hallway-ascii))

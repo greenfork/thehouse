@@ -95,9 +95,7 @@
     :nine ,(level-object "9" <nine>)
     :cell (+ :block :space :hero :door :exit-door
              :one :two :three :four :five :six :seven :eight :nine)
-    :newline (+ "\n" "\r\n")
-    # :row (* (some :cell) (? :newline))
-    :row (* (some :cell) (any (if-not :cell 1)))
+    :row (* (some :cell) (? "\n"))
     :main (some :row)})
 
 (defn- newline? [x] (or (= x (chr "\n")) (= x (chr "\r"))))
@@ -173,8 +171,7 @@
 # Hallway #
 ###########
 
-(def hallway-ascii ``
-.......DD.........
+(def hallway-ascii ``.......DD.........
 .BBBBBB..BBBBBBBB.
 .B..............B.
 D@..............B.
@@ -183,8 +180,7 @@ D................d
 .B..............B.
 .B..............B.
 .BBBBBBB..BBBBBBB.
-........DD......
-``)
+........DD........``)
 
 (def hallway (<level> :hallway "Hallway" hallway-ascii))
 (each exit-door (filter (type? :exit-door) (hallway :blocks))
@@ -195,12 +191,10 @@ D................d
 # Corridor #
 ############
 
-(def corridor-ascii ``
-BBBBBBBBBBBBBBBBBBBBB
+(def corridor-ascii ``BBBBBBBBBBBBBBBBBBBBB
 D@...1........2.....d
 D....1........2.....d
-BBBBBBBBBBBBBBBBBBBBB
-``)
+BBBBBBBBBBBBBBBBBBBBB``)
 
 (def corridor (<level> :corridor "Corridor" corridor-ascii))
 (each exit-door (filter (type? :exit-door) (corridor :blocks))
@@ -227,8 +221,7 @@ BBBBBBBBBBBBBBBBBBBBB
 # Touch the Stone #
 ###################
 
-(def touch-the-stone-ascii ``
-.BBBB1BBBBBBBBBBBBBBB.
+(def touch-the-stone-ascii ``.BBBB1BBBBBBBBBBBBBBB.
 .B..................B.
 .B..................2.
 .B..................B.
@@ -237,8 +230,7 @@ D....................d
 .B..................B.
 .B..................B.
 .B..................B.
-.BBBBBBBBBBBBBB3BBBBB.
-``)
+.BBBBBBBBBBBBBB3BBBBB.``)
 
 (def touch-the-stone (<level> :touch-the-stone "Touch the Stone" touch-the-stone-ascii))
 (defn- reset-collision-cb [obj] (set (obj :collision-cb) (fn [self] true)))
@@ -273,8 +265,7 @@ D....................d
 # Dance on the Floor #
 ######################
 
-(def dance-on-the-floor-ascii ``
-.BBBBBBBBBBBBBBBBBBBB.
+(def dance-on-the-floor-ascii ``.BBBBBBBBBBBBBBBBBBBB.
 .B..................B.
 .B....BBB1....BBB...B.
 .B....B.B.....B.B...B.
@@ -283,8 +274,7 @@ D....................d
 .B.........BB.......B.
 .B.....2...BB.....3.B.
 .B..................B.
-.BBBBBBBBBBBBBBBBBBBB.
-``)
+.BBBBBBBBBBBBBBBBBBBB.``)
 
 (defn make-dance-on-the-floor []
   (def level (<level> :dance-on-the-floor "Dance on the Floor" dance-on-the-floor-ascii))
@@ -380,8 +370,7 @@ D....................d
 # Clean me #
 ############
 
-(def clean-me-ascii ``
-.BBBBBBBBB.BBBBBBBBBB.
+(def clean-me-ascii ``.BBBBBBBBB.BBBBBBBBBB.
 .B.1.....B.B2.......B.
 .B.......B.B........B.
 .BBB.....BBBBB......B.
@@ -390,8 +379,7 @@ D................1...d
 .BBB.....BBBBB......B.
 .B......1B.B........B.
 .B.......B.B........B.
-.BBBBBBBBB.BBBBBBBBBB.
-``)
+.BBBBBBBBB.BBBBBBBBBB.``)
 
 (defn make-clean-me []
   (def level (<level> :clean-me "Clean me" clean-me-ascii))
@@ -450,8 +438,7 @@ D................1...d
 # Final #
 #########
 
-(def final-ascii ``
-........BBBBBBBBBBBBB.
+(def final-ascii ``........BBBBBBBBBBBBB.
 ........B...........B.
 ........B...........B.
 .BBBBBBBB........222B.
@@ -460,8 +447,7 @@ d.......1........29.B.
 .BBBBBBBB........222B.
 ........B...........B.
 ........B...........B.
-........BBBBBBBBBBBBB.
-``)
+........BBBBBBBBBBBBB.``)
 
 (defn make-final [exit-game]
   (def level (<level> :final "Final" final-ascii))
