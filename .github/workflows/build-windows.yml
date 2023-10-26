@@ -49,7 +49,7 @@ jobs:
         run: cd ${{ github.workspace }} && jpm load-lockfile
         shell: cmd
       - name: jpm build
-        run: jpm build
+        run: jpm --verbose build
         shell: cmd
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Remove release
