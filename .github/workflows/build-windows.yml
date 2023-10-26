@@ -39,7 +39,7 @@ jobs:
       - run: echo %PATH%
         shell: cmd
       - run: janet -v
-        continue-on-error: true
+      - run: janet windows_peg_test.janet
       - name: Install jpm
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm
         shell: cmd
