@@ -5,7 +5,7 @@
     :door "D"
     :exit-door "d"
     :cell (+ :block :space :hero :door :exit-door)
-    :newline (+ "\n" "\r\n")
+    :newline (+ "\n" "\r\n" "\r")
     :row (* (some :cell) (? :newline))
     :main (some :row)})
 
