@@ -23,6 +23,12 @@
 (defn change-color [obj color]
   (set (obj :color) color))
 
+(defn move-hero-a-bit
+  "Move a hearo so that its positioning looks more natural."
+  [x]
+  (when (= (x :type) :hero)
+    (v+= (x :pos) [0.2 0.5]))
+  x)
 (defn apply-offset [x map-offset]
   (v+= (x :pos) map-offset)
   x)
@@ -122,6 +128,7 @@
     (->>
       ascii
       (peg/match level-grammar)
+      (map move-hero-a-bit)
       (map |(unitize-obj $ block-side))
       (map |(apply-offset $ (:screen-offset level screen-width screen-height)))))
   (put level :hero (find (type? :hero) objects))
