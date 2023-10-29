@@ -423,6 +423,7 @@
   (each nine (filter (type? :nine) (level :specials))
     (put nine :color :gold))
   (each ed (filter (type? :exit-door) (level :blocks))
+    (put ed :draw false)
     (put ed :collision-cb (fn [self]
                             (change-phase level :try-exit)
                             (put self :collision-cb (fn [self]
