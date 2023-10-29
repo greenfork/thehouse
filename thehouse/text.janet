@@ -2,8 +2,8 @@
 (use ./globals)
 (use ./vector)
 
-(def fonts @{:small nil :normal nil})
-(def sizes {:small 40 :normal 56})
+(def fonts @{:small nil :normal nil :title nil})
+(def sizes {:small 40 :normal 56 :title 120})
 (def font-spacing 1)
 (def line-height 1)
 (def vertical-offset (* (sizes :normal) line-height))
@@ -19,10 +19,14 @@
                          (sizes :normal) font-range))
   (set (fonts :small) (load-font-from-memory
                         ".ttf" font-ttf (length font-ttf)
-                        (sizes :small) font-range)))
+                        (sizes :small) font-range))
+  (set (fonts :title) (load-font-from-memory
+                        ".ttf" font-ttf (length font-ttf)
+                        (sizes :title) font-range)))
 (defn deinit []
   (unload-font (fonts :normal))
-  (unload-font (fonts :small)))
+  (unload-font (fonts :small))
+  (unload-font (fonts :title)))
 
 (defn draw
   ``Draw some `text` at `pos` position, moving to the next line on each `"\n"`

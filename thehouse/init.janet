@@ -16,15 +16,21 @@
   @{:cur-level-idx 0
     :frame 0
     :must-exit? false
-    # Phases: init, levels, final
-    :phase :init
-    :state @{:init 0}})
+    # Phases: menu, init, levels, final
+    :phase :menu
+    :state @{:init 0
+             :menu :play}})
 (defn exit-game [game]
   (set (game :must-exit?) true))
 (defn curstate [game]
   (case (game :phase)
+    :menu (in (game :state) (game :phase))
     :init (in (game :state) (game :phase))
     :levels ((curlevel game) :state)))
+(defn setstate [game val]
+  (case (game :phase)
+    :menu (put-in game [:state :menu] val)
+    (error "Not implemented")))
 (defn next-level! [game]
   (def cur-level-name ((curlevel game) :name))
   (if (= (++ (game :cur-level-idx)) (length (game :levels)))
@@ -76,6 +82,48 @@
   (def pos [(math/round (- (/ screen-width 2) (/ (text/measure text) 2)))
             (- screen-height 50)])
   (call/not 120 60 (fn [] (text/draw text pos :size :small :color :light-gray))))
+
+(defn draw-menu []
+  (def curstate (curstate game))
+  (when (or (key-pressed? :enter) (key-pressed? :space))
+    (case curstate
+      :play (change-phase game :init)
+      :play/ru (do
+                 (setdyn :language :ru)
+                 (change-phase game :init))
+      :quit (change-phase game :final)
+      :quit/ru (change-phase game :final)))
+  (when (and (key-pressed? :right) (= curstate :play))
+    (setstate game :play/ru))
+  (when (and (key-pressed? :right) (= curstate :quit))
+    (setstate game :quit/ru))
+  (when (and (key-pressed? :left) (= curstate :play/ru))
+    (setstate game :play))
+  (when (and (key-pressed? :left) (= curstate :quit/ru))
+    (setstate game :quit))
+  (when (and (key-pressed? :down) (= curstate :play))
+    (setstate game :quit))
+  (when (and (key-pressed? :down) (= curstate :play/ru))
+    (setstate game :quit/ru))
+  (when (and (key-pressed? :up) (= curstate :quit))
+    (setstate game :play))
+  (when (and (key-pressed? :up) (= curstate :quit/ru))
+    (setstate game :play/ru))
+  (def init-offset [(/ screen-width 5) (/ screen-height 8)])
+  (def vert-margin 60)
+  (def title-margin 200)
+  (def lang-margin 500)
+  (defn color [state]
+    (if (= state curstate) :yellow :ray-white))
+  (begin-drawing)
+  (clear-background [0 0 0])
+  (text/draw "The House" init-offset :size :title)
+  (text/draw "Play" (v+ init-offset [0 (+ title-margin vert-margin)]) :color (color :play))
+  (text/draw "Quit" (v+ init-offset [0 (+ title-margin (* 2 vert-margin))]) :color (color :quit))
+  (text/draw "Тот Дом" (v+ init-offset [lang-margin 0]) :size :title)
+  (text/draw "Играть" (v+ init-offset [lang-margin (+ title-margin vert-margin)]) :color (color :play/ru))
+  (text/draw "Выход" (v+ init-offset [lang-margin (+ title-margin (* 2 vert-margin))]) :color (color :quit/ru))
+  (end-drawing))
 
 (defn run-text [texts]
   (begin-drawing)
@@ -139,8 +187,8 @@
 (defn main
   [& args]
   (setdyn :log-level 2)
-  (setdyn :language :ru)
-  (set-config-flags :window-resizable :vsync-hint)
+  (set-config-flags :vsync-hint)
+  (set-config-flags :window-resizable)
 
   # Start a repl to connect to.
   (with [netrepl-stream
@@ -163,6 +211,7 @@
       (while (and (not (game :must-exit?)) (not (window-should-close)))
         (increase-frame-counter game)
         (case (game :phase)
+          :menu (draw-menu)
           :init (run-text (text/get "start"))
           :levels (let [level (curlevel game)]
                     (case (level :phase)
