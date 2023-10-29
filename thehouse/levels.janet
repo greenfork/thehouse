@@ -243,10 +243,7 @@
 (each ed (filter (type? :exit-door) (touch-the-stone :blocks))
   (put ed :collision-cb (fn [self] (change-phase touch-the-stone :the-door) true)))
 (put-in touch-the-stone [:state :the-door]
-        (text-logic (text/touch-the-stone-text "THE-DOOR")
-                    :the-door
-                    (fn [self] (each ed (filter (type? :exit-door) (touch-the-stone :blocks))
-                                 (put ed :collision-cb nil)))))
+        (text-logic (text/touch-the-stone-text "THE-DOOR") :the-door))
 (put-in touch-the-stone [:state :unlocked] (text-logic (text/touch-the-stone-text "UNLOCKED") :unlocked))
 
 ######################
