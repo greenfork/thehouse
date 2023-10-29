@@ -154,7 +154,6 @@
       (text/init)
       (while (and (not (game :must-exit?)) (not (window-should-close)))
         (increase-frame-counter game)
-        (draw-fps 0 0)
         (case (game :phase)
           :init (run-text text/start-text)
           :levels (let [level (curlevel game)]
