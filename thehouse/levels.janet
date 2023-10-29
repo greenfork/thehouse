@@ -236,7 +236,7 @@
          true)))
 (array/concat (touch-the-stone :blocks)
               (filter (type? :one :two :three) (touch-the-stone :specials)))
-(set-change-color-cb :one :red (touch-the-stone :blocks) (touch-the-stone :specials))
+(set-change-color-cb :one :pink (touch-the-stone :blocks) (touch-the-stone :specials))
 (set-change-color-cb :two :green (touch-the-stone :blocks) (touch-the-stone :specials))
 (set-change-color-cb :three :blue (touch-the-stone :blocks) (touch-the-stone :specials))
 (put-in touch-the-stone [:state :init] (text-logic (text/touch-the-stone-text "START") :init))
@@ -287,7 +287,7 @@
     (fn [self]
       (log/debug* :one "active")
       (put self :active true)
-      (put self :color :red)
+      (put self :color :pink)
       (put self :draw nil)
       (when (not pressed-event-fired)
         (set pressed-event-fired true)
