@@ -51,13 +51,15 @@
   #             :bb-max (bb 1))
   (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
     (next-level! game)))
+
+# Lazily generate each level.
 (defn game/init [game]
-  (def levels [(levels/make-hallway)
-               (levels/make-corridor)
-               (levels/make-touch-the-stone)
-               (levels/make-dance-on-the-floor)
-               (levels/make-clean-me)
-               (levels/make-final (fn [] (change-phase game :final)))])
+  (def levels [(delay (levels/make-hallway))
+               (delay (levels/make-corridor))
+               (delay (levels/make-touch-the-stone))
+               (delay (levels/make-dance-on-the-floor))
+               (delay (levels/make-clean-me))
+               (delay (levels/make-final (fn [] (change-phase game :final))))])
   (put game :levels levels))
 
 

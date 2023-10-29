@@ -26,4 +26,4 @@
 
 # Game related
 
-(defn curlevel [game] (in (game :levels) (game :cur-level-idx)))
+(defn curlevel [game] ((in (game :levels) (game :cur-level-idx))))
