@@ -182,10 +182,12 @@
 
 (def hallway-ascii (slurp "assets/levels/hallway.txt"))
 
-(def hallway (<level> :hallway "Hallway" hallway-ascii))
-(each exit-door (filter (type? :exit-door) (hallway :blocks))
-  (set (exit-door :collision-cb) (open-exit-doors-cb (hallway :blocks))))
-(put-in hallway [:state :init] (text-logic (text/hallway-text "START") :init))
+(defn make-hallway []
+  (def level (<level> :hallway "Hallway" hallway-ascii))
+  (each exit-door (filter (type? :exit-door) (level :blocks))
+    (set (exit-door :collision-cb) (open-exit-doors-cb (level :blocks))))
+  (put-in level [:state :init] (text-logic ((text/get "hallway") "START") :init)))
+
 
 ############
 # Corridor #
@@ -193,26 +195,27 @@
 
 (def corridor-ascii (slurp "assets/levels/corridor.txt"))
 
-(def corridor (<level> :corridor "Corridor" corridor-ascii))
-(each exit-door (filter (type? :exit-door) (corridor :blocks))
-  (set (exit-door :collision-cb) (open-exit-doors-cb (corridor :blocks))))
-(put-in corridor [:state :init] (text-logic (text/corridor-text "START") :init))
-(array/concat (corridor :blocks)
-              (filter (type? :one :two) (corridor :specials)))
-(each one (filter (type? :one) (corridor :specials))
-  (put one :collision-cb (fn [self] (put corridor :phase :corridor) false))
-  (put one :draw false))
-(put-in corridor [:state :corridor]
-        (text-logic (text/corridor-text "CORRIDOR")
-                    :corridor
-                    (destroy-collision-cb (filter (type? :one) (corridor :specials)))))
-(each two (filter (type? :two) (corridor :specials))
-  (put two :collision-cb (fn [self] (put corridor :phase :tunnel) false))
-  (put two :draw false))
-(put-in corridor [:state :tunnel]
-        (text-logic (text/corridor-text "TUNNEL")
-                    :tunnel
-                    (destroy-collision-cb (filter (type? :two) (corridor :specials)))))
+(defn make-corridor []
+  (def level (<level> :corridor "Corridor" corridor-ascii))
+  (each exit-door (filter (type? :exit-door) (level :blocks))
+    (set (exit-door :collision-cb) (open-exit-doors-cb (level :blocks))))
+  (put-in level [:state :init] (text-logic ((text/get "corridor") "START") :init))
+  (array/concat (level :blocks)
+                (filter (type? :one :two) (level :specials)))
+  (each one (filter (type? :one) (level :specials))
+    (put one :collision-cb (fn [self] (put level :phase :corridor) false))
+    (put one :draw false))
+  (put-in level [:state :corridor]
+          (text-logic ((text/get "corridor") "CORRIDOR")
+                      :corridor
+                      (destroy-collision-cb (filter (type? :one) (level :specials)))))
+  (each two (filter (type? :two) (level :specials))
+    (put two :collision-cb (fn [self] (put level :phase :tunnel) false))
+    (put two :draw false))
+  (put-in level [:state :tunnel]
+          (text-logic ((text/get "corridor") "TUNNEL")
+                      :tunnel
+                      (destroy-collision-cb (filter (type? :two) (level :specials))))))
 
 ###################
 # Touch the Stone #
@@ -220,31 +223,33 @@
 
 (def touch-the-stone-ascii (slurp "assets/levels/touch_the_stone.txt"))
 
-(def touch-the-stone (<level> :touch-the-stone "Touch the Stone" touch-the-stone-ascii))
-(defn- reset-collision-cb [obj] (set (obj :collision-cb) (fn [self] true)))
-(defn- set-change-color-cb [type color blocks specials]
-  (def obj (find (type? type) specials))
-  (set (obj :collision-cb)
-       (fn [self]
-         (log/debug* type "active")
-         (change-color self color)
-         (set (self :active) true)
-         (reset-collision-cb self)
-         (when (all |($ :active) (filter (type? :one :two :three) specials))
-           ((open-exit-doors-cb blocks) self)
-           (change-phase touch-the-stone :unlocked))
-         true)))
-(array/concat (touch-the-stone :blocks)
-              (filter (type? :one :two :three) (touch-the-stone :specials)))
-(set-change-color-cb :one :pink (touch-the-stone :blocks) (touch-the-stone :specials))
-(set-change-color-cb :two :green (touch-the-stone :blocks) (touch-the-stone :specials))
-(set-change-color-cb :three :blue (touch-the-stone :blocks) (touch-the-stone :specials))
-(put-in touch-the-stone [:state :init] (text-logic (text/touch-the-stone-text "START") :init))
-(each ed (filter (type? :exit-door) (touch-the-stone :blocks))
-  (put ed :collision-cb (fn [self] (change-phase touch-the-stone :the-door) true)))
-(put-in touch-the-stone [:state :the-door]
-        (text-logic (text/touch-the-stone-text "THE-DOOR") :the-door))
-(put-in touch-the-stone [:state :unlocked] (text-logic (text/touch-the-stone-text "UNLOCKED") :unlocked))
+(defn make-touch-the-stone []
+  (def level (<level> :touch-the-stone "Touch the Stone" touch-the-stone-ascii))
+  (defn- reset-collision-cb [obj] (set (obj :collision-cb) (fn [self] true)))
+  (defn- set-change-color-cb [type color blocks specials]
+    (def obj (find (type? type) specials))
+    (set (obj :collision-cb)
+         (fn [self]
+           (log/debug* type "active")
+           (change-color self color)
+           (set (self :active) true)
+           (reset-collision-cb self)
+           (when (all |($ :active) (filter (type? :one :two :three) specials))
+             ((open-exit-doors-cb blocks) self)
+             (change-phase level :unlocked))
+           true)))
+  (array/concat (level :blocks)
+                (filter (type? :one :two :three) (level :specials)))
+  (set-change-color-cb :one :pink (level :blocks) (level :specials))
+  (set-change-color-cb :two :green (level :blocks) (level :specials))
+  (set-change-color-cb :three :blue (level :blocks) (level :specials))
+  (put-in level [:state :init] (text-logic ((text/get "touch-the-stone") "START") :init))
+  (each ed (filter (type? :exit-door) (level :blocks))
+    (put ed :collision-cb (fn [self] (change-phase level :the-door) true)))
+  (put-in level [:state :the-door]
+          (text-logic ((text/get "touch-the-stone") "THE-DOOR") :the-door))
+  (put-in level [:state :unlocked] (text-logic ((text/get "touch-the-stone") "UNLOCKED") :unlocked)))
+
 
 ######################
 # Dance on the Floor #
@@ -254,13 +259,13 @@
 
 (defn make-dance-on-the-floor []
   (def level (<level> :dance-on-the-floor "Dance on the Floor" dance-on-the-floor-ascii))
-  (put-in level [:state :init] (text-logic (text/dance-on-the-floor-text "START") :init))
-  (put-in level [:state :the-door] (text-logic (text/dance-on-the-floor-text "THE-DOOR") :the-door))
-  (put-in level [:state :pressed] (text-logic (text/dance-on-the-floor-text "PRESSED") :pressed))
-  (put-in level [:state :flickered] (text-logic (text/dance-on-the-floor-text "FLICKERED") :flickered))
-  (put-in level [:state :lost] (text-logic (text/dance-on-the-floor-text "LOST") :lost))
-  (put-in level [:state :dont-touch-walls] (text-logic (text/dance-on-the-floor-text "DONT-TOUCH-WALLS") :dont-touch-walls))
-  (put-in level [:state :unlocked] (text-logic (text/dance-on-the-floor-text "UNLOCKED") :unlocked))
+  (put-in level [:state :init] (text-logic ((text/get "dance-on-the-floor") "START") :init))
+  (put-in level [:state :the-door] (text-logic ((text/get "dance-on-the-floor") "THE-DOOR") :the-door))
+  (put-in level [:state :pressed] (text-logic ((text/get "dance-on-the-floor") "PRESSED") :pressed))
+  (put-in level [:state :flickered] (text-logic ((text/get "dance-on-the-floor") "FLICKERED") :flickered))
+  (put-in level [:state :lost] (text-logic ((text/get "dance-on-the-floor") "LOST") :lost))
+  (put-in level [:state :dont-touch-walls] (text-logic ((text/get "dance-on-the-floor") "DONT-TOUCH-WALLS") :dont-touch-walls))
+  (put-in level [:state :unlocked] (text-logic ((text/get "dance-on-the-floor") "UNLOCKED") :unlocked))
   (each ed (filter (type? :exit-door) (level :blocks))
     (put ed :collision-cb
          (fn [self]
@@ -350,14 +355,14 @@
 
 (defn make-clean-me []
   (def level (<level> :clean-me "Clean me" clean-me-ascii))
-  (put-in level [:state :init] (text-logic (text/clean-me-text "START") :init))
-  (put-in level [:state :the-door] (text-logic (text/clean-me-text "THE-DOOR") :the-door))
-  (put-in level [:state :trash] (text-logic (text/clean-me-text "TRASH") :trash))
-  (put-in level [:state :two-trash] (text-logic (text/clean-me-text "TWO-TRASH") :two-trash))
-  (put-in level [:state :bin] (text-logic (text/clean-me-text "BIN") :bin))
-  (put-in level [:state :take-out] (text-logic (text/clean-me-text "TAKE-OUT") :take-out))
-  (put-in level [:state :take-out-2] (text-logic (text/clean-me-text "TAKE-OUT-2") :take-out-2))
-  (put-in level [:state :done] (text-logic (text/clean-me-text "DONE") :done))
+  (put-in level [:state :init] (text-logic ((text/get "clean-me") "START") :init))
+  (put-in level [:state :the-door] (text-logic ((text/get "clean-me") "THE-DOOR") :the-door))
+  (put-in level [:state :trash] (text-logic ((text/get "clean-me") "TRASH") :trash))
+  (put-in level [:state :two-trash] (text-logic ((text/get "clean-me") "TWO-TRASH") :two-trash))
+  (put-in level [:state :bin] (text-logic ((text/get "clean-me") "BIN") :bin))
+  (put-in level [:state :take-out] (text-logic ((text/get "clean-me") "TAKE-OUT") :take-out))
+  (put-in level [:state :take-out-2] (text-logic ((text/get "clean-me") "TAKE-OUT-2") :take-out-2))
+  (put-in level [:state :done] (text-logic ((text/get "clean-me") "DONE") :done))
   (each ed (filter (type? :exit-door) (level :blocks))
     (put ed :collision-cb (fn [self] (change-phase level :the-door) true)))
   (put-in level [:state :has-trash] false)
@@ -409,13 +414,13 @@
 
 (defn make-final [exit-game]
   (def level (<level> :final "Final" final-ascii))
-  (put-in level [:state :init] (text-logic (text/final-text "START") :init))
-  (put-in level [:state :try-exit] (text-logic (text/final-text "TRY-EXIT") :try-exit))
-  (put-in level [:state :exit] (text-logic (text/final-text "EXIT") :exit (fn [_] (exit-game))))
+  (put-in level [:state :init] (text-logic ((text/get "final") "START") :init))
+  (put-in level [:state :try-exit] (text-logic ((text/get "final") "TRY-EXIT") :try-exit))
+  (put-in level [:state :exit] (text-logic ((text/get "final") "EXIT") :exit (fn [_] (exit-game))))
   (put-in level [:state :closer]
-          (text-logic (text/final-text "CLOSER") :closer
+          (text-logic ((text/get "final") "CLOSER") :closer
                       (destroy-collision-cb (filter (type? :one) (level :specials)))))
-  (put-in level [:state :stone-table] (text-logic (text/final-text "STONE-TABLE")
+  (put-in level [:state :stone-table] (text-logic ((text/get "final") "STONE-TABLE")
                                                   :stone-table (fn [_] (exit-game))))
   (array/concat (level :blocks) (filter (type? :one :two :nine) (level :specials)))
   (each one (filter (type? :one) (level :specials))

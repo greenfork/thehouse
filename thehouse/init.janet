@@ -19,7 +19,6 @@
     # Phases: init, levels, final
     :phase :init
     :state @{:init 0}})
-
 (defn exit-game [game]
   (set (game :must-exit?) true))
 (defn curstate [game]
@@ -46,11 +45,15 @@
   #             :bb-max (bb 1))
   (when (or (< hx1 lx1) (< hy1 ly1) (> hx2 lx2) (> hy2 ly2))
     (next-level! game)))
+(defn game/init [game]
+  (def levels [(levels/make-hallway)
+               (levels/make-corridor)
+               (levels/make-touch-the-stone)
+               (levels/make-dance-on-the-floor)
+               (levels/make-clean-me)
+               (levels/make-final (fn [] (change-phase game :final)))])
+  (put game :levels levels))
 
-(def levels [levels/hallway levels/corridor levels/touch-the-stone
-             (levels/make-dance-on-the-floor) (levels/make-clean-me)
-             (levels/make-final (fn [] (change-phase game :final)))])
-(put game :levels levels)
 
 (defn increase-frame-counter [game]
   (if (< (game :frame) math/int-max)
@@ -66,7 +69,10 @@
     (f)))
 
 (defn draw-press-space []
-  (def text "Press Space")
+  (def text
+    (case (dyn :language)
+      :ru "Нажмите Пробел"
+      "Press Space"))
   (def pos [(math/round (- (/ screen-width 2) (/ (text/measure text) 2)))
             (- screen-height 50)])
   (call/not 120 60 (fn [] (text/draw text pos :size :small :color :light-gray))))
@@ -133,6 +139,7 @@
 (defn main
   [& args]
   (setdyn :log-level 2)
+  (setdyn :language :ru)
   (set-config-flags :window-resizable :vsync-hint)
 
   # Start a repl to connect to.
@@ -151,11 +158,12 @@
            (fn [_] (close-window))]
       (set-target-fps 60)
       (hide-cursor)
+      (game/init game)
       (text/init)
       (while (and (not (game :must-exit?)) (not (window-should-close)))
         (increase-frame-counter game)
         (case (game :phase)
-          :init (run-text text/start-text)
+          :init (run-text (text/get "start"))
           :levels (let [level (curlevel game)]
                     (case (level :phase)
                       :default (execute-level-default level)

@@ -11,12 +11,15 @@
 (def font-ttf (slurp "./assets/fonts/Europeana_One.ttf"))
 
 (defn init []
+  (def ascii-range (range 32 127))
+  (def cyrillic-range (range 0x410 0x450))
+  (def font-range (array/concat ascii-range cyrillic-range))
   (set (fonts :normal) (load-font-from-memory
                          ".ttf" font-ttf (length font-ttf)
-                         (sizes :normal) (range 32 127)))
+                         (sizes :normal) font-range))
   (set (fonts :small) (load-font-from-memory
                         ".ttf" font-ttf (length font-ttf)
-                        (sizes :small) (range 32 127))))
+                        (sizes :small) font-range)))
 (defn deinit []
   (unload-font (fonts :normal))
   (unload-font (fonts :small)))
@@ -97,16 +100,47 @@
                                   (map (fn [[section text]]
                                          [section (map |(peg/replace-all :s+ " " $) text)]))
                                   (from-pairs))))})
-(defn- <text> [file-name]
+(defn- <text> [file-name language]
+  (def path
+    (case language
+      :ru "./assets/texts/ru/"
+      :en "./assets/texts/en/"))
   (->>
-    (string "./assets/texts/" file-name ".txt")
+    (string path file-name ".txt")
     (slurp)
     (peg/match text-grammar)
     (first)))
-(def start-text (<text> "start"))
-(def hallway-text (<text> "hallway"))
-(def corridor-text (<text> "corridor"))
-(def touch-the-stone-text (<text> "touch_the_stone"))
-(def dance-on-the-floor-text (<text> "dance_on_the_floor"))
-(def clean-me-text (<text> "clean_me"))
-(def final-text (<text> "final"))
+
+(def- start-text/en (<text> "start" :en))
+(def- hallway-text/en (<text> "hallway" :en))
+(def- corridor-text/en (<text> "corridor" :en))
+(def- touch-the-stone-text/en (<text> "touch_the_stone" :en))
+(def- dance-on-the-floor-text/en (<text> "dance_on_the_floor" :en))
+(def- clean-me-text/en (<text> "clean_me" :en))
+(def- final-text/en (<text> "final" :en))
+
+(def- start-text/ru (<text> "start" :ru))
+(def- hallway-text/ru (<text> "hallway" :ru))
+(def- corridor-text/ru (<text> "corridor" :ru))
+(def- touch-the-stone-text/ru (<text> "touch_the_stone" :ru))
+(def- dance-on-the-floor-text/ru (<text> "dance_on_the_floor" :ru))
+(def- clean-me-text/ru (<text> "clean_me" :ru))
+(def- final-text/ru (<text> "final" :ru))
+
+(defn get [name]
+  (def language (or (dyn :language) :en))
+  (match [name language]
+    ["start" :en] start-text/en
+    ["start" :ru] start-text/ru
+    ["hallway" :en] hallway-text/en
+    ["hallway" :ru] hallway-text/ru
+    ["corridor" :en] corridor-text/en
+    ["corridor" :ru] corridor-text/ru
+    ["touch-the-stone" :en] touch-the-stone-text/en
+    ["touch-the-stone" :ru] touch-the-stone-text/ru
+    ["dance-on-the-floor" :en] dance-on-the-floor-text/en
+    ["dance-on-the-floor" :ru] dance-on-the-floor-text/ru
+    ["clean-me" :en] clean-me-text/en
+    ["clean-me" :ru] clean-me-text/ru
+    ["final" :en] final-text/en
+    ["final" :ru] final-text/ru))
