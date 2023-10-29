@@ -184,6 +184,8 @@
   (:draw hero)
   (end-drawing))
 
+(def music-src (slurp "./assets/music/dream_2.ogg"))
+
 (defn main
   [& args]
   (setdyn :log-level 2)
@@ -208,6 +210,9 @@
       (hide-cursor)
       (game/init game)
       (text/init)
+      (init-audio-device)
+      (def music (load-music-stream-from-memory ".ogg" music-src (length music-src)))
+      (play-music-stream music)
       (while (and (not (game :must-exit?)) (not (window-should-close)))
         (increase-frame-counter game)
         (case (game :phase)
@@ -218,6 +223,10 @@
                       :default (execute-level-default level)
                       (execute-level-text level)))
           :final (exit-game game))
+        (when (window-focused?)
+          (update-music-stream music))
         # Yield control to other fibers for things such as REPL and animation.
         (ev/sleep 0.001))
-      (text/deinit))))
+      (text/deinit)
+      (unload-music-stream music)
+      (close-audio-device))))
