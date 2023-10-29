@@ -190,7 +190,7 @@
 
 (defn main
   [& args]
-  (setdyn :log-level 2)
+  (setdyn :log-level 3)
   (set-config-flags :vsync-hint)
   (set-config-flags :window-resizable)
 
