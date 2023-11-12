@@ -1,5 +1,5 @@
 @[{:url "https://github.com/ianthehenry/cmd" :tag "7551225818a8a5f6665a918f1862db0c7704a1f4" :type :git}
   {:url "https://github.com/ianthehenry/judge.git" :tag "8ef1bc1d0fc1675fb061a60d4ef81a535b2c45eb" :type :git}
-  {:url "https://github.com/janet-lang/jaylib.git" :tag "f62fb0d9bc780c1095a9d5ac7e4c380eebacc0a1" :type :git}
+  {:url "https://github.com/janet-lang/jaylib.git" :tag "3be68f8c5c32955cd97e6056acf7a6fb2836d9a0" :type :git}
   {:url "https://github.com/janet-lang/pkgs.git" :tag "a3a135dce35efddf48f7d91c85bfa3b7752f285f" :type :git}
-  {:url "https://github.com/janet-lang/spork.git" :tag "641b27238e073c5f5f963ec16c79b51643d3e66f" :type :git}]
+  {:url "https://github.com/janet-lang/spork.git" :tag "d644da0fd05612a2d5a3c97277bf7b9bb96dcf6b" :type :git}]

@@ -3,9 +3,7 @@
   :description ```Horror game ```
   :version "1.0.0"
   :dependencies [{:url "https://github.com/ianthehenry/judge.git"
-                  :tag "v2.7.0"}
-                 {:url "file:///home/grfork/reps/jaylib"
-                  :branch "meine"}])
+                  :tag "v2.7.0"}])
 
 (declare-executable
   :name "thehouse"
