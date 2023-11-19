@@ -1,6 +1,6 @@
 # The House
 
-A an arcade-horror style game. Controls: use arrows to move, press Space to advance in a dialogue. Download it from https://greenfork.itch.io/the-house.
+An arcade-horror style game. Controls: use arrows to move, press Space to advance in a dialogue. Download it from https://greenfork.itch.io/the-house.
 
 ![image](https://github.com/greenfork/thehouse/assets/20167110/359783fc-d248-489e-92f4-a472e4e60d1d)
 
